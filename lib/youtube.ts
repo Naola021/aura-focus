@@ -4,14 +4,23 @@ export type YTRef = {
   videoId?: string;
 };
 
-// YouTube playlist prefixes: PL (standard), RD (Mixes), UU (channel uploads), OL (albums), FL, TL, LL
-const PLAYLIST_OK = /^(PL|UU|OL|FL|RD|TL|LL)[\w-]{2,}$/i;
+// Standard embeddable playlists start with PL, UU, or OL
+const EMBEDDABLE_PLAYLIST_PREFIX = /^(PL|UU|OL)[\w-]{2,}$/i;
 
-/** Accepts a video ID, playlist ID, or any youtube.com / youtu.be link (including Mixes with list=RD...). */
+/** Accepts a video ID, playlist ID, or any youtube.com / youtu.be link. */
 export function parseYouTube(input: string): YTRef | null {
   const s = input.trim();
-  if (PLAYLIST_OK.test(s)) return { kind: "playlist", ref: s };
-  if (/^[\w-]{11}$/.test(s)) return { kind: "video", ref: s };
+  if (!s) return null;
+
+  // 11-character video ID directly
+  if (/^[\w-]{11}$/.test(s)) {
+    return { kind: "video", ref: s };
+  }
+
+  // Pure playlist ID
+  if (EMBEDDABLE_PLAYLIST_PREFIX.test(s)) {
+    return { kind: "playlist", ref: s };
+  }
 
   try {
     const urlStr = s.startsWith("http://") || s.startsWith("https://") ? s : `https://${s}`;
@@ -19,29 +28,38 @@ export function parseYouTube(input: string): YTRef | null {
     const list = u.searchParams.get("list");
     const v = u.searchParams.get("v");
 
-    // If it has a playlist/mix parameter (e.g. watch?v=...&list=RD...)
-    if (list && PLAYLIST_OK.test(list)) {
+    // Standard playlist (starts with PL, UU, OL)
+    if (list && EMBEDDABLE_PLAYLIST_PREFIX.test(list)) {
       return { kind: "playlist", ref: list, videoId: v ?? undefined };
     }
 
-    // youtu.be short links (can also carry ?list=RD...)
-    if (u.hostname === "youtu.be" || u.hostname.endsWith(".youtu.be")) {
-      const id = u.pathname.slice(1, 12);
-      if (list && PLAYLIST_OK.test(list)) {
-        return { kind: "playlist", ref: list, videoId: id || undefined };
-      }
-      return id ? { kind: "video", ref: id } : null;
+    // Video ID in query param ?v= (even if list=RD... is present, extract the playable video ID)
+    if (v && /^[\w-]{11}$/.test(v)) {
+      return { kind: "video", ref: v };
     }
 
+    // youtu.be short links (e.g. youtu.be/6OCBxSC0r4g)
+    if (u.hostname === "youtu.be" || u.hostname.endsWith(".youtu.be")) {
+      const id = u.pathname.replace(/^\//, "").slice(0, 11);
+      if (/^[\w-]{11}$/.test(id)) {
+        return { kind: "video", ref: id };
+      }
+    }
+
+    // Embed, live, or shorts links
     if (u.hostname.includes("youtube.com")) {
-      if (v) return { kind: "video", ref: v };
-      const m = u.pathname.match(/^\/(embed|live|shorts)\/([\w-]{11})/);
-      if (m) return { kind: "video", ref: m[2] };
-      if (list && PLAYLIST_OK.test(list)) return { kind: "playlist", ref: list };
+      const m = u.pathname.match(/^\/(embed|live|shorts|v)\/([\w-]{11})/);
+      if (m && m[2]) {
+        return { kind: "video", ref: m[2] };
+      }
+      if (list && EMBEDDABLE_PLAYLIST_PREFIX.test(list)) {
+        return { kind: "playlist", ref: list };
+      }
     }
   } catch {
     /* not a valid URL */
   }
+
   return null;
 }
 
@@ -51,71 +69,46 @@ export type YouTubeMeta = {
   thumbnail?: string;
 };
 
-/** Convert any video ID into its continuous YouTube Mix (Radio) reference. */
+/** Convert video ID into ref. */
 export function makeMixRef(videoId: string): YTRef {
   return {
-    kind: "playlist",
-    ref: `RD${videoId}`,
-    videoId,
+    kind: "video",
+    ref: videoId,
   };
 }
 
-/** Full metadata lookup using YouTube's oEmbed endpoint. Returns title, artist (author_name), and real thumbnail. */
-export async function fetchYouTubeMeta(r: YTRef): Promise<YouTubeMeta | null> {
-  const targetId = r.videoId || (r.kind === "video" ? r.ref : null);
-  if (targetId) {
-    try {
-      const res = await fetch(
-        `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${targetId}`)}`
-      );
-      if (res.ok) {
-        const json = (await res.json()) as {
-          title?: string;
-          author_name?: string;
-          thumbnail_url?: string;
-        };
-        const isMix = r.kind === "playlist" || r.ref.startsWith("RD");
-        return {
-          title: json.title ? (isMix ? `Mix - ${json.title}` : json.title) : (isMix ? "YouTube Mix" : "YouTube Audio"),
-          artist: json.author_name || (isMix ? "YouTube Mix" : "YouTube Artist"),
-          thumbnail: json.thumbnail_url,
-        };
-      }
-    } catch {
-      /* fallback below */
-    }
-  }
+/** Full metadata lookup using internal API route with fallback. Never throws. */
+export async function fetchYouTubeMeta(r: YTRef): Promise<YouTubeMeta> {
+  const targetId = r.kind === "video" ? r.ref : r.videoId || r.ref;
+  const isPlaylist = r.kind === "playlist" && r.ref.startsWith("PL");
+  const targetUrl = isPlaylist
+    ? `https://www.youtube.com/playlist?list=${r.ref}`
+    : `https://www.youtube.com/watch?v=${targetId}`;
 
-  if (r.kind === "playlist") {
-    try {
-      const res = await fetch(
-        `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/playlist?list=${r.ref}`)}`
-      );
-      if (res.ok) {
-        const json = (await res.json()) as {
-          title?: string;
-          author_name?: string;
-          thumbnail_url?: string;
-        };
-        return {
-          title: json.title ?? "YouTube Mix",
-          artist: json.author_name ?? "YouTube",
-          thumbnail: json.thumbnail_url,
-        };
-      }
-    } catch {
+  const defaultThumbnail = targetId ? `https://i.ytimg.com/vi/${targetId}/hqdefault.jpg` : undefined;
+
+  try {
+    const res = await fetch(`/api/youtube-meta?url=${encodeURIComponent(targetUrl)}`);
+    if (res.ok) {
+      const json = await res.json();
       return {
-        title: "YouTube Mix",
-        artist: "YouTube",
+        title: json.title || (isPlaylist ? "YouTube Playlist" : "YouTube Audio"),
+        artist: json.author_name || "YouTube",
+        thumbnail: json.thumbnail_url || defaultThumbnail,
       };
     }
+  } catch {
+    /* Network or offline fallback */
   }
 
-  return null;
+  return {
+    title: isPlaylist ? "YouTube Playlist" : "YouTube Audio",
+    artist: "YouTube",
+    thumbnail: defaultThumbnail,
+  };
 }
 
-/** Best-effort title lookup. Returns null if YouTube blocks it or the item is private. */
-export async function fetchYouTubeTitle(r: YTRef): Promise<string | null> {
+export async function fetchYouTubeTitle(r: YTRef): Promise<string> {
   const meta = await fetchYouTubeMeta(r);
-  return meta?.title ?? null;
+  return meta.title;
 }

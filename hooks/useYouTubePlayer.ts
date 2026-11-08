@@ -2,39 +2,48 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { YTRef } from "@/lib/youtube";
 
-let apiPromise: Promise<void> | null = null;
-
 function loadYouTubeApi(): Promise<void> {
-  if (window.YT?.Player) return Promise.resolve();
-  if (!apiPromise) {
-    apiPromise = new Promise<void>((resolve) => {
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        prev?.();
+  if (typeof window === "undefined") return Promise.reject();
+  if (window.YT && window.YT.Player) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    const check = setInterval(() => {
+      if (window.YT && window.YT.Player) {
+        clearInterval(check);
         resolve();
-      };
+      }
+    }, 50);
+
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      prev?.();
+      clearInterval(check);
+      resolve();
+    };
+
+    if (!document.getElementById("youtube-iframe-api")) {
       const s = document.createElement("script");
+      s.id = "youtube-iframe-api";
       s.src = "https://www.youtube.com/iframe_api";
       document.head.appendChild(s);
-    });
-  }
-  return apiPromise;
+    }
+  });
 }
 
 const keyOf = (s: YTRef) => `${s.kind}:${s.ref}${s.videoId ? `:${s.videoId}` : ""}`;
 
 function errorMessage(code: number) {
-  if (code === 101 || code === 150) return "The owner doesn't allow this to be embedded. Pick another.";
-  if (code === 100) return "This is private or was removed. Pick another.";
-  if (code === 2) return "That link isn't valid.";
-  return "Couldn't play this one. Try another.";
+  if (code === 101 || code === 150) return "This audio cannot be embedded by owner. Trying next...";
+  if (code === 100) return "This track is unavailable. Trying next...";
+  if (code === 2) return "Invalid link. Trying next...";
+  return "Could not play this track. Trying next...";
 }
 
-/** Pass null until you know which source to load (e.g. before localStorage has hydrated). */
-export function useYouTubePlayer(source: YTRef | null) {
+export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const sourceRef = useRef(source);
+  const onEndedRef = useRef(onEnded);
   const loadedKey = useRef<string | null>(null);
   const errorStreak = useRef(0);
 
@@ -46,11 +55,12 @@ export function useYouTubePlayer(source: YTRef | null) {
 
   useEffect(() => {
     sourceRef.current = source;
+    onEndedRef.current = onEnded;
   });
 
   const hasSource = source !== null;
 
-  // Create the player once, as soon as a source is known
+  // Initialize YouTube Player
   useEffect(() => {
     const initial = sourceRef.current;
     if (!hasSource || !initial) return;
@@ -58,7 +68,8 @@ export function useYouTubePlayer(source: YTRef | null) {
 
     loadYouTubeApi().then(() => {
       if (cancelled || !mountRef.current || !window.YT) return;
-      const el = document.createElement("div"); // YouTube swaps this for an iframe
+      mountRef.current.innerHTML = "";
+      const el = document.createElement("div");
       mountRef.current.appendChild(el);
       loadedKey.current = keyOf(initial);
 
@@ -68,24 +79,31 @@ export function useYouTubePlayer(source: YTRef | null) {
         rel: 0,
         playsinline: 1,
         disablekb: 1,
+        enablejsapi: 1,
+        origin: typeof window !== "undefined" ? window.location.origin : "",
       };
-      if (initial.kind === "playlist") {
+
+      const isEmbeddablePlaylist = initial.kind === "playlist" && initial.ref.startsWith("PL");
+      if (isEmbeddablePlaylist) {
         playerVars.listType = "playlist";
         playerVars.list = initial.ref;
-        if (initial.videoId) {
-          playerVars.videoId = initial.videoId;
-        }
       }
+
+      const videoId = isEmbeddablePlaylist
+        ? undefined
+        : initial.kind === "video"
+        ? initial.ref
+        : initial.videoId || initial.ref;
 
       playerRef.current = new window.YT.Player(el, {
         width: "100%",
         height: "100%",
-        videoId: initial.kind === "video" ? initial.ref : initial.videoId || undefined,
+        videoId,
         playerVars,
         events: {
           onReady: (e) => {
             e.target.setVolume(50);
-            if (initial.kind === "playlist") e.target.setLoop(true);
+            if (isEmbeddablePlaylist) e.target.setLoop(true);
             setReady(true);
           },
           onStateChange: (e) => {
@@ -95,6 +113,9 @@ export function useYouTubePlayer(source: YTRef | null) {
               errorStreak.current = 0;
               setError(null);
             }
+            if (e.data === S.ENDED) {
+              onEndedRef.current?.();
+            }
             if (e.data === S.PLAYING || e.data === S.PAUSED || e.data === S.CUED) {
               setTitle(e.target.getVideoData()?.title ?? "");
             }
@@ -102,12 +123,12 @@ export function useYouTubePlayer(source: YTRef | null) {
           onError: (e) => {
             setPlaying(false);
             errorStreak.current += 1;
-            // In a playlist, skip unplayable videos (but give up after a few in a row)
-            if (loadedKey.current?.startsWith("playlist:") && errorStreak.current < 4) {
-              e.target.nextVideo();
-              return;
+            console.warn("YouTube player error code:", e.data);
+            if (errorStreak.current < 3) {
+              onEndedRef.current?.();
+            } else {
+              setError(errorMessage(e.data));
             }
-            setError(errorMessage(e.data));
           },
         },
       });
@@ -123,7 +144,7 @@ export function useYouTubePlayer(source: YTRef | null) {
     };
   }, [hasSource]);
 
-  // Switch source (user picked something else). loadVideoById / loadPlaylist autoplay, which is what we want here.
+  // Switch track dynamically
   useEffect(() => {
     if (!ready || !source) return;
     const key = keyOf(source);
@@ -133,19 +154,36 @@ export function useYouTubePlayer(source: YTRef | null) {
     setError(null);
     const p = playerRef.current;
     if (!p) return;
-    if (source.kind === "video") {
-      p.loadVideoById(source.ref);
-    } else {
+
+    const isEmbeddablePlaylist = source.kind === "playlist" && source.ref.startsWith("PL");
+    if (isEmbeddablePlaylist) {
       p.loadPlaylist({ list: source.ref, listType: "playlist", index: 0 });
       p.setLoop(true);
+    } else {
+      const vid = source.kind === "video" ? source.ref : source.videoId || source.ref;
+      p.loadVideoById(vid);
     }
   }, [source, ready]);
 
   const toggle = useCallback(() => {
     const p = playerRef.current;
     if (!p) return;
-    if (playing) p.pauseVideo();
-    else p.playVideo();
+    try {
+      const state = typeof p.getPlayerState === "function" ? p.getPlayerState() : -1;
+      if (state === 1) {
+        p.pauseVideo();
+        setPlaying(false);
+      } else {
+        if (typeof p.isMuted === "function" && p.isMuted()) {
+          p.unMute();
+        }
+        p.playVideo();
+        setPlaying(true);
+      }
+    } catch {
+      if (playing) p.pauseVideo?.();
+      else p.playVideo?.();
+    }
   }, [playing]);
 
   const setVolume = useCallback((v: number) => {

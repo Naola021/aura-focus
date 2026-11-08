@@ -8,6 +8,10 @@ interface YTPlayer {
   previousVideo(): void;
   setLoop(loop: boolean): void;
   getVideoData(): { title: string; video_id: string };
+  getPlayerState(): number;
+  isMuted(): boolean;
+  unMute(): void;
+  mute(): void;
   destroy(): void;
 }
 

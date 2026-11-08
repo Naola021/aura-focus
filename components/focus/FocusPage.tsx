@@ -10,7 +10,6 @@ import {
   Play,
   User,
   X,
-  Cloud,
 } from "lucide-react";
 import FocusStudioModal from "./FocusStudioModal";
 import ImmersiveFocusView from "./ImmersiveFocusView";
@@ -21,8 +20,6 @@ import IconButton from "./ui/IconButton";
 import Sidebar, { type NavTab } from "../navigation/Sidebar";
 import StatsView from "../stats/StatsView";
 import ProfileView from "../profile/ProfileView";
-import AuthSyncModal from "../auth/AuthSyncModal";
-import { useAuthSync } from "@/hooks/useAuthSync";
 import { useHistory } from "@/hooks/useHistory";
 import { useHotkey } from "@/hooks/useHotkey";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -35,7 +32,7 @@ import { cn } from "@/lib/cn";
 import { formatHMS } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { ensureNotificationPermission, notify } from "@/lib/notify";
-import { todayStats, weekStats } from "@/lib/stats";
+import { todayStats } from "@/lib/stats";
 import type { SessionTask, Subject } from "@/lib/types";
 import {
   DEFAULT_WALLPAPER,
@@ -73,12 +70,10 @@ export default function FocusPage() {
   }
 
   // Profile & Subjects hooks
-  const { profile, setName, setDailyTarget, setWeeklyTarget } = useUserProfile();
+  const { profile, setName, setDailyTarget } = useUserProfile();
   const { subjects, addSubject, deleteSubject, getSubject } = useSubjects();
   const history = useHistory();
   const pip = usePictureInPicture();
-  const { session, isSyncing, syncError, login, syncToCloud, logout } = useAuthSync();
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Active Session Config
   const [selectedSubjectId, setSelectedSubjectId] = useLocalStorage<string>(
@@ -184,47 +179,6 @@ export default function FocusPage() {
     setSessionStartTime(null);
   }
 
-  async function handleLogin(account: string, passcode: string) {
-    const currentPayload = {
-      profile: {
-        name: profile.name,
-        weeklyTargetHours: profile.weeklyTargetHours || 14,
-      },
-      subjects,
-      sessionTasks,
-      history: history.entries,
-    };
-
-    const res = await login(account, passcode, currentPayload);
-    if (res.success && res.cloudData) {
-      if (res.cloudData.profile?.name) {
-        setName(res.cloudData.profile.name);
-      }
-      if (res.cloudData.profile?.weeklyTargetHours) {
-        setWeeklyTarget(res.cloudData.profile.weeklyTargetHours);
-      }
-      if (res.cloudData.sessionTasks) {
-        setSessionTasks(res.cloudData.sessionTasks);
-      }
-    }
-    return res;
-  }
-
-  async function handleSyncCloud() {
-    return syncToCloud({
-      profile: {
-        name: profile.name,
-        weeklyTargetHours: profile.weeklyTargetHours || 14,
-      },
-      subjects,
-      sessionTasks,
-      history: history.entries,
-      updatedAt: Date.now(),
-    });
-  }
-
-  const weeklyMetrics = weekStats(history.entries, profile.weeklyTargetHours || 14);
-
   function handleAddTime(extraMinutes: number) {
     setDurationMinutes((prev) => prev + extraMinutes);
   }
@@ -296,7 +250,7 @@ export default function FocusPage() {
 
       {/* Floating Top-Left "aura" Branding & Menu Pill (When sidebar is collapsed on focus view) */}
       {(!isSidebarOpen || isFocusView) && (
-        <div className="fixed top-4 left-4 sm:left-6 z-30 flex items-center gap-2.5 animate-fade-in">
+        <div className="fixed top-4 left-4 sm:left-6 z-30 flex items-center gap-2 animate-fade-in">
           <button
             type="button"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -315,26 +269,6 @@ export default function FocusPage() {
             <span className="font-black text-base tracking-[0.2em] text-white">aura</span>
             <Menu size={16} className="text-zinc-400 group-hover:text-white transition ml-0.5" />
           </button>
-
-          {/* Direct Sign-In / Cloud Sync Pill right next to the logo on Home screen */}
-          <button
-            type="button"
-            onClick={() => setIsAuthModalOpen(true)}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold backdrop-blur-xl shadow-2xl transition active:scale-95",
-              session.isSignedIn
-                ? "border-emerald-500/40 bg-zinc-950/85 text-emerald-300 hover:bg-zinc-900"
-                : "border-zinc-800/90 bg-zinc-950/85 text-zinc-200 hover:border-[#ff4d6d]/50 hover:bg-zinc-900 hover:text-white"
-            )}
-            title={
-              session.isSignedIn
-                ? `Signed in as ${session.account} (Click to manage sync)`
-                : "Sign in to sync across devices"
-            }
-          >
-            <Cloud size={15} className={session.isSignedIn ? "text-emerald-400" : "text-[#ff4d6d]"} />
-            <span>{session.isSignedIn ? session.account : "Sign In"}</span>
-          </button>
         </div>
       )}
 
@@ -351,8 +285,6 @@ export default function FocusPage() {
             profile={profile}
             streakCount={today.streakCount}
             onCollapse={() => setIsSidebarOpen(false)}
-            session={session}
-            onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
         </div>
       )}
@@ -401,21 +333,6 @@ export default function FocusPage() {
 
             {/* Header Action Tools */}
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsAuthModalOpen(true)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                  session.isSignedIn
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-                    : "border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                )}
-                title={session.isSignedIn ? `Signed in as ${session.account}` : "Sign in to sync across devices"}
-              >
-                <Cloud size={13} className={session.isSignedIn ? "text-emerald-400" : "text-[#ff4d6d]"} />
-                <span className="hidden sm:inline">{session.isSignedIn ? "Synced" : "Sign in"}</span>
-              </button>
-
               <button
                 type="button"
                 onClick={() => setIsStartModalOpen(true)}
@@ -527,28 +444,10 @@ export default function FocusPage() {
               profile={profile}
               onUpdateName={setName}
               onSetDailyTarget={setDailyTarget}
-              onSetWeeklyTarget={setWeeklyTarget}
-              session={session}
-              onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              currentWeeklyHoursFocused={weeklyMetrics.hours}
             />
           )}
         </main>
       </div>
-
-      {/* Cloud Sync & Multi-Device Auth Modal */}
-      <AuthSyncModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        session={session}
-        isSyncing={isSyncing}
-        syncError={syncError}
-        onLogin={handleLogin}
-        onSync={handleSyncCloud}
-        onLogout={logout}
-        currentProfileName={profile.name}
-        weeklyTargetHours={profile.weeklyTargetHours || 14}
-      />
 
       {/* Start Focus Modal (Step 1 Setup + Step 2 Attach Tasks) */}
       <StartSessionModal

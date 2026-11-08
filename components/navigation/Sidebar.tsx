@@ -8,11 +8,9 @@ import {
   Flame,
   MoreHorizontal,
   ChevronLeft,
-  Cloud,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { UserProfile } from "@/lib/types";
-import type { AuthSession } from "@/hooks/useAuthSync";
 
 export type NavTab = "home" | "stats" | "profile";
 
@@ -23,8 +21,6 @@ type Props = {
   profile: UserProfile;
   streakCount: number;
   onCollapse?: () => void;
-  session?: AuthSession;
-  onOpenAuthModal?: () => void;
 };
 
 export default function Sidebar({
@@ -34,8 +30,6 @@ export default function Sidebar({
   profile,
   streakCount,
   onCollapse,
-  session,
-  onOpenAuthModal,
 }: Props) {
   const navItems: Array<{
     id: "home" | "stats";
@@ -128,8 +122,8 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Bottom Section: Single User Profile Card with Cloud Sync */}
-      <div className="space-y-2">
+      {/* Bottom Section: Single User Profile Card */}
+      <div className="space-y-3">
         <div
           onClick={() => onTabChange("profile")}
           className={cn(
@@ -145,37 +139,15 @@ export default function Sidebar({
             </div>
             <div className="truncate">
               <div className="text-xs font-bold text-white truncate">{profile.name}</div>
-              <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                <span className="flex items-center gap-0.5">
-                  <Flame size={11} className="text-[#ff4d6d] fill-[#ff4d6d]" />
-                  <span>{streakCount}d</span>
-                </span>
-                <span>·</span>
-                {session?.isSignedIn ? (
-                  <span className="flex items-center gap-0.5 text-emerald-400 font-medium">
-                    <Cloud size={10} />
-                    <span>Synced</span>
-                  </span>
-                ) : (
-                  <span className="text-zinc-500">Local</span>
-                )}
+              <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+                <Flame size={11} className="text-[#ff4d6d] fill-[#ff4d6d]" />
+                <span>{streakCount} day streak</span>
               </div>
             </div>
           </div>
 
           <MoreHorizontal size={15} className="text-zinc-500 shrink-0 mr-1" />
         </div>
-
-        {!session?.isSignedIn && onOpenAuthModal && (
-          <button
-            type="button"
-            onClick={onOpenAuthModal}
-            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 py-1.5 text-[11px] font-bold text-zinc-300 hover:text-white transition"
-          >
-            <Cloud size={12} className="text-[#ff4d6d]" />
-            <span>Sign in to sync</span>
-          </button>
-        )}
       </div>
     </aside>
   );

@@ -72,6 +72,7 @@ export function useUserProfile() {
           level,
           hours,
         },
+        weeklyTargetHours: hours * 7,
       }));
     },
     [setProfile]

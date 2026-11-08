@@ -1,8 +1,8 @@
 export type Source = {
   id: string;
   kind: "video" | "playlist";
-  ref: string; // YouTube video ID or playlist ID
-  videoId?: string; // Starting video in mix/playlist
+  ref: string; // YouTube video ID (or PL playlist ID)
+  videoId?: string; // Starting video in playlist
   title: string;
   artist?: string;
   cover?: string;
@@ -14,12 +14,11 @@ export type Source = {
 export const DEFAULT_SOURCES: Source[] = [
   {
     id: "aster-aweke-mix",
-    kind: "playlist",
-    ref: "RDD_FPq-sUfXY",
-    videoId: "D_FPq-sUfXY",
+    kind: "video",
+    ref: "6OCBxSC0r4g",
     title: "01 Aster Aweke Gela Gela",
     artist: "Aster Aweke",
-    cover: "https://i.ytimg.com/vi/D_FPq-sUfXY/hqdefault.jpg",
+    cover: "https://i.ytimg.com/vi/6OCBxSC0r4g/hqdefault.jpg",
     builtIn: true,
   },
   {
