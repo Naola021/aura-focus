@@ -70,8 +70,21 @@
   - **Resolved Cloud Object Creation Error**: Replaced the payload-limited mock API with a dedicated, high-capacity JSON cloud storage backend (`febfcbc`) supporting full nested payloads (profiles, weekly target hours, tasks, mixes, and 50+ session histories).
   - Verified live on Vercel production (`f112f28`) with instant sub-second login and cross-device sync.
 
+- [x] **Milestone 13: Music Player Overhaul, Clean Profile Target & Distraction-Free UI**
+  - **Removed Cloud Sync Modal & Floating Pill**: Eliminated the `[ ☁️ tonystark ]` pill and the sync modal popup per user request for pure, distraction-free focus aesthetics.
+  - **Restored Original Profile Layout**: Removed the separate "Weekly Focus Commitment" slider section and "Multi-Device Sync" card. Weekly target is calculated directly from daily target duration (`dailyTarget.hours * 7`) in the top-right goal badge.
+  - **Fixed YouTube Music Play Button & Link Fetching**:
+    - Created internal server route `/api/youtube-meta` to completely eliminate browser CORS fetch errors.
+    - Updated `parseYouTube` to extract embeddable video IDs from any YouTube URL (including `&list=RD...` mix links).
+    - Set default track #1 to verified embeddable Aster Aweke *01 Aster Aweke Gela Gela* (`6OCBxSC0r4g`).
+    - Configured YouTube player with `origin: window.location.origin` and `enablejsapi: 1` for reliable postMessage playback control.
+    - Moved background audio iframe to non-throttled DOM position (`fixed bottom-0 right-0 w-[240px] h-[180px] pointer-events-none -z-50 opacity-[0.01]`) preventing Chromium/Safari autoplay and visibility pauses.
+    - Added auto-advance on track completion (`onEnded`) to play through the saved audio queue continuously.
+    - Direct player state querying in `toggle()` ensuring immediate play/pause response.
+  - **Quality Gates & Deployment**: `tsc --noEmit` (0 errors), `npm run lint` (0 errors), `npm run build` (successful Turbopack production compilation). Pushed to `origin main` for automatic Vercel production deployment.
+
 ## Current Trajectory
-- Complete: Multi-device cloud sync and PWA offline capability fully operational on live production.
+- Complete: YouTube music playback fully restored and functional; clean distraction-free UI with Tony Stark profile and calculated weekly target active in production.
 
 ## Squad Status
 | Agent | Task | Status |
@@ -82,3 +95,4 @@
 | Senior Product Engineer | Tony Stark Profile, Weekly Focus Target & Multi-Device Cloud Sync Engine | Completed |
 | Senior Product Engineer | Offline PWA Service Worker & Installable Native App Shell | Completed |
 | Senior Product Engineer | High-Capacity Cloud Datastore & Sync Fix | Completed |
+| Senior Product Engineer | Music Player Engine Fix, Metadata Route, Clean Profile Layout & Sync Removal | Completed |
