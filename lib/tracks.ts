@@ -13,6 +13,15 @@ export type Source = {
 // Curated default focus & music mixes saved for all users
 export const DEFAULT_SOURCES: Source[] = [
   {
+    id: "bruno-mars-mix",
+    kind: "video",
+    ref: "LjhCEhWiKXk",
+    title: "My- Mix · Bruno Mars",
+    artist: "Bruno Mars",
+    cover: "https://i.ytimg.com/vi/LjhCEhWiKXk/hqdefault.jpg",
+    builtIn: true,
+  },
+  {
     id: "aster-aweke-mix",
     kind: "video",
     ref: "6OCBxSC0r4g",
@@ -24,10 +33,10 @@ export const DEFAULT_SOURCES: Source[] = [
   {
     id: "lofi-study",
     kind: "video",
-    ref: "jfKfPfyJRdk",
+    ref: "5qap5aO4i9A",
     title: "Lofi Girl · Relax & Study Radio",
     artist: "Lofi Girl",
-    cover: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg",
+    cover: "https://i.ytimg.com/vi/5qap5aO4i9A/hqdefault.jpg",
     builtIn: true,
   },
   {

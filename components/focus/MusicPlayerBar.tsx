@@ -16,6 +16,7 @@ import {
   VolumeX,
   X,
   Plus,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { uid } from "@/lib/id";
@@ -57,6 +58,11 @@ export default function MusicPlayerBar({
     "aura:deletedAudioIds",
     []
   );
+  // Persist user's chosen default audio link
+  const [defaultSourceId, setDefaultSourceId] = useLocalStorage<string>(
+    "aura:defaultSourceId",
+    ""
+  );
   const [selectedId, setSelectedId, selectedReady] = useLocalStorage<string>(
     "aura:selectedAudioId",
     ""
@@ -69,6 +75,7 @@ export default function MusicPlayerBar({
   // New Link inputs
   const [newLink, setNewLink] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [makeNewDefault, setMakeNewDefault] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -100,7 +107,10 @@ export default function MusicPlayerBar({
     return combined.filter((s) => !deletedSourceIds.includes(s.id));
   }, [sanitizedCustomSources, deletedSourceIds]);
 
-  const currentIndex = allSources.findIndex((s) => s.id === selectedId);
+  const effectiveDefaultId = defaultSourceId || allSources[0]?.id || "";
+
+  const activeId = selectedId || effectiveDefaultId;
+  const currentIndex = allSources.findIndex((s) => s.id === activeId);
   const current: Source | null =
     currentIndex >= 0
       ? allSources[currentIndex]
@@ -197,6 +207,9 @@ export default function MusicPlayerBar({
 
       setCustomSources((prev) => [newSrc, ...prev]);
       setSelectedId(newSrc.id);
+      if (makeNewDefault || customSources.length === 0) {
+        setDefaultSourceId(newSrc.id);
+      }
       setNewLink("");
       setNewTitle("");
       setIsAdding(false);
@@ -209,6 +222,10 @@ export default function MusicPlayerBar({
   function handleDeleteSource(id: string) {
     setDeletedSourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setCustomSources((prev) => prev.filter((s) => s.id !== id));
+    if (defaultSourceId === id) {
+      const remaining = allSources.filter((s) => s.id !== id);
+      setDefaultSourceId(remaining[0]?.id || "");
+    }
     if (selectedId === id) {
       const remaining = allSources.filter((s) => s.id !== id);
       setSelectedId(remaining[0]?.id || "");
@@ -297,6 +314,18 @@ export default function MusicPlayerBar({
                   <span>{isAdding ? "Saving…" : "Save audio"}</span>
                 </button>
               </div>
+
+              <div className="flex items-center justify-between px-1">
+                <label className="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-zinc-200 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={makeNewDefault}
+                    onChange={(e) => setMakeNewDefault(e.target.checked)}
+                    className="h-3 w-3 rounded bg-zinc-800 border-zinc-700 accent-[#ff4d6d] cursor-pointer"
+                  />
+                  <span>Set as my default music</span>
+                </label>
+              </div>
             </div>
             {addError && <p className="text-[10px] text-red-400">{addError}</p>}
           </form>
@@ -318,6 +347,7 @@ export default function MusicPlayerBar({
             ) : (
               allSources.map((s) => {
                 const isSelected = current?.id === s.id;
+                const isDefault = s.id === effectiveDefaultId;
                 return (
                   <div
                     key={s.id}
@@ -362,12 +392,26 @@ export default function MusicPlayerBar({
                         >
                           {s.title}
                         </div>
-                        <div className="text-[10px] text-zinc-400 truncate flex items-center gap-1.5">
-                          <span>{s.artist || "YouTube"}</span>
-                          {s.builtIn && (
-                            <span className="rounded bg-zinc-800 px-1 py-0.2 text-[9px] text-zinc-400">
-                              Default
+                        <div className="text-[10px] text-zinc-400 truncate flex items-center gap-1.5 mt-0.5">
+                          <span className="truncate">{s.artist || "YouTube"}</span>
+                          {isDefault ? (
+                            <span className="rounded bg-[#ff4d6d]/20 border border-[#ff4d6d]/40 px-1.5 py-0.2 text-[9px] font-bold text-[#ff4d6d] inline-flex items-center gap-0.5 shrink-0">
+                              <Star size={9} fill="currentColor" />
+                              <span>Default</span>
                             </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDefaultSourceId(s.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 px-1.5 py-0.2 rounded border border-zinc-700/80 bg-zinc-800 text-[9px] font-medium text-zinc-300 hover:text-white hover:border-[#ff4d6d]/60 transition inline-flex items-center gap-1 shrink-0"
+                              title="Set this link as your default starting music"
+                            >
+                              <Star size={9} />
+                              <span>Set default</span>
+                            </button>
                           )}
                         </div>
                       </div>
