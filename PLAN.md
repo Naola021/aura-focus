@@ -81,10 +81,11 @@
     - Moved background audio iframe to non-throttled DOM position (`fixed bottom-0 right-0 w-[240px] h-[180px] pointer-events-none -z-50 opacity-[0.01]`) preventing Chromium/Safari autoplay and visibility pauses.
     - Added auto-advance on track completion (`onEnded`) to play through the saved audio queue continuously.
     - Direct player state querying in `toggle()` ensuring immediate play/pause response.
+    - Added ability to delete default tracks too, with persistent tracking (`aura:deletedAudioIds`) and optional "Restore default tracks" option.
   - **Quality Gates & Deployment**: `tsc --noEmit` (0 errors), `npm run lint` (0 errors), `npm run build` (successful Turbopack production compilation). Pushed to `origin main` for automatic Vercel production deployment.
 
 ## Current Trajectory
-- Complete: YouTube music playback fully restored and functional; clean distraction-free UI with Tony Stark profile and calculated weekly target active in production.
+- Complete: All music tracks (default and custom) are fully deletable and customizable; playback and link fetching verified live in production.
 
 ## Squad Status
 | Agent | Task | Status |
