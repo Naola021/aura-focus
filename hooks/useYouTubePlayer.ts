@@ -21,7 +21,7 @@ function loadYouTubeApi(): Promise<void> {
   return apiPromise;
 }
 
-const keyOf = (s: YTRef) => `${s.kind}:${s.ref}`;
+const keyOf = (s: YTRef) => `${s.kind}:${s.ref}${s.videoId ? `:${s.videoId}` : ""}`;
 
 function errorMessage(code: number) {
   if (code === 101 || code === 150) return "The owner doesn't allow this to be embedded. Pick another.";
@@ -72,12 +72,15 @@ export function useYouTubePlayer(source: YTRef | null) {
       if (initial.kind === "playlist") {
         playerVars.listType = "playlist";
         playerVars.list = initial.ref;
+        if (initial.videoId) {
+          playerVars.videoId = initial.videoId;
+        }
       }
 
       playerRef.current = new window.YT.Player(el, {
         width: "100%",
         height: "100%",
-        videoId: initial.kind === "video" ? initial.ref : undefined,
+        videoId: initial.kind === "video" ? initial.ref : initial.videoId || undefined,
         playerVars,
         events: {
           onReady: (e) => {

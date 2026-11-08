@@ -87,7 +87,10 @@ export default function MusicPlayerBar({
 
   const hydrated = customReady && selectedReady;
   const ytSource = useMemo<YTRef | null>(
-    () => (hydrated && current ? { kind: current.kind, ref: current.ref } : null),
+    () =>
+      hydrated && current
+        ? { kind: current.kind, ref: current.ref, videoId: current.videoId }
+        : null,
     [hydrated, current]
   );
 
@@ -119,6 +122,10 @@ export default function MusicPlayerBar({
   }
 
   function handleNextTrack() {
+    if (current?.kind === "playlist") {
+      ytNext();
+      return;
+    }
     if (allSources.length <= 1) {
       if (allSources.length === 1) ytNext();
       return;
@@ -128,6 +135,10 @@ export default function MusicPlayerBar({
   }
 
   function handlePrevTrack() {
+    if (current?.kind === "playlist") {
+      ytPrev();
+      return;
+    }
     if (allSources.length <= 1) {
       if (allSources.length === 1) ytPrev();
       return;
@@ -167,10 +178,11 @@ export default function MusicPlayerBar({
         id: uid(),
         kind: parsed.kind,
         ref: parsed.ref,
+        videoId: parsed.videoId,
         title: label,
-        artist: "YouTube",
+        artist: parsed.kind === "playlist" ? "YouTube Mix" : "YouTube",
         cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=200&q=80",
-        duration: parsed.kind === "playlist" ? "Playlist" : "Audio Link",
+        duration: parsed.kind === "playlist" ? "Mix / Playlist" : "Audio Link",
       };
 
       setCustomSources((prev) => [newSrc, ...prev]);
@@ -257,9 +269,12 @@ export default function MusicPlayerBar({
                 type="url"
                 value={newLink}
                 onChange={(e) => setNewLink(e.target.value)}
-                placeholder="Paste YouTube video or playlist link…"
+                placeholder="Paste YouTube video, Mix, or playlist URL…"
                 className="w-full rounded-xl bg-zinc-900 border border-zinc-700/80 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ff4d6d]"
               />
+              <p className="text-[10px] text-zinc-500 px-1">
+                Tip: Mixes (e.g. Aster Aweke Mix with <code className="text-zinc-400 font-mono">list=RD...</code>) play continuously with Next/Prev track skip.
+              </p>
               <div className="flex gap-2">
                 <input
                   type="text"

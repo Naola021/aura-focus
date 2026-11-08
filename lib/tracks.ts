@@ -2,6 +2,7 @@ export type Source = {
   id: string;
   kind: "video" | "playlist";
   ref: string; // YouTube video ID or playlist ID
+  videoId?: string; // Starting video in mix/playlist
   title: string;
   artist?: string;
   cover?: string;
