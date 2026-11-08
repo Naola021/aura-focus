@@ -296,7 +296,7 @@ export default function FocusPage() {
 
       {/* Floating Top-Left "aura" Branding & Menu Pill (When sidebar is collapsed on focus view) */}
       {(!isSidebarOpen || isFocusView) && (
-        <div className="fixed top-4 left-4 sm:left-6 z-30 flex items-center gap-2 animate-fade-in">
+        <div className="fixed top-4 left-4 sm:left-6 z-30 flex items-center gap-2.5 animate-fade-in">
           <button
             type="button"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -314,6 +314,26 @@ export default function FocusPage() {
             </div>
             <span className="font-black text-base tracking-[0.2em] text-white">aura</span>
             <Menu size={16} className="text-zinc-400 group-hover:text-white transition ml-0.5" />
+          </button>
+
+          {/* Direct Sign-In / Cloud Sync Pill right next to the logo on Home screen */}
+          <button
+            type="button"
+            onClick={() => setIsAuthModalOpen(true)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold backdrop-blur-xl shadow-2xl transition active:scale-95",
+              session.isSignedIn
+                ? "border-emerald-500/40 bg-zinc-950/85 text-emerald-300 hover:bg-zinc-900"
+                : "border-zinc-800/90 bg-zinc-950/85 text-zinc-200 hover:border-[#ff4d6d]/50 hover:bg-zinc-900 hover:text-white"
+            )}
+            title={
+              session.isSignedIn
+                ? `Signed in as ${session.account} (Click to manage sync)`
+                : "Sign in to sync across devices"
+            }
+          >
+            <Cloud size={15} className={session.isSignedIn ? "text-emerald-400" : "text-[#ff4d6d]"} />
+            <span>{session.isSignedIn ? session.account : "Sign In"}</span>
           </button>
         </div>
       )}
