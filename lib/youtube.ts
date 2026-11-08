@@ -45,9 +45,23 @@ export function parseYouTube(input: string): YTRef | null {
   return null;
 }
 
-/** Best-effort title lookup. Returns null if YouTube blocks it or the item is private. */
-export async function fetchYouTubeTitle(r: YTRef): Promise<string | null> {
-  // Try video lookup first if a videoId exists or it's a single video (YouTube oEmbed always resolves videos)
+export type YouTubeMeta = {
+  title: string;
+  artist: string;
+  thumbnail?: string;
+};
+
+/** Convert any video ID into its continuous YouTube Mix (Radio) reference. */
+export function makeMixRef(videoId: string): YTRef {
+  return {
+    kind: "playlist",
+    ref: `RD${videoId}`,
+    videoId,
+  };
+}
+
+/** Full metadata lookup using YouTube's oEmbed endpoint. Returns title, artist (author_name), and real thumbnail. */
+export async function fetchYouTubeMeta(r: YTRef): Promise<YouTubeMeta | null> {
   const targetId = r.videoId || (r.kind === "video" ? r.ref : null);
   if (targetId) {
     try {
@@ -55,10 +69,17 @@ export async function fetchYouTubeTitle(r: YTRef): Promise<string | null> {
         `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${targetId}`)}`
       );
       if (res.ok) {
-        const json = (await res.json()) as { title?: string };
-        if (json.title) {
-          return r.kind === "playlist" ? `${json.title} (Mix)` : json.title;
-        }
+        const json = (await res.json()) as {
+          title?: string;
+          author_name?: string;
+          thumbnail_url?: string;
+        };
+        const isMix = r.kind === "playlist" || r.ref.startsWith("RD");
+        return {
+          title: json.title ? (isMix ? `Mix - ${json.title}` : json.title) : (isMix ? "YouTube Mix" : "YouTube Audio"),
+          artist: json.author_name || (isMix ? "YouTube Mix" : "YouTube Artist"),
+          thumbnail: json.thumbnail_url,
+        };
       }
     } catch {
       /* fallback below */
@@ -71,13 +92,30 @@ export async function fetchYouTubeTitle(r: YTRef): Promise<string | null> {
         `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/playlist?list=${r.ref}`)}`
       );
       if (res.ok) {
-        const json = (await res.json()) as { title?: string };
-        return json.title ?? "YouTube Mix";
+        const json = (await res.json()) as {
+          title?: string;
+          author_name?: string;
+          thumbnail_url?: string;
+        };
+        return {
+          title: json.title ?? "YouTube Mix",
+          artist: json.author_name ?? "YouTube",
+          thumbnail: json.thumbnail_url,
+        };
       }
     } catch {
-      return "YouTube Mix";
+      return {
+        title: "YouTube Mix",
+        artist: "YouTube",
+      };
     }
   }
 
   return null;
+}
+
+/** Best-effort title lookup. Returns null if YouTube blocks it or the item is private. */
+export async function fetchYouTubeTitle(r: YTRef): Promise<string | null> {
+  const meta = await fetchYouTubeMeta(r);
+  return meta?.title ?? null;
 }

@@ -20,7 +20,12 @@ import {
 import { cn } from "@/lib/cn";
 import { uid } from "@/lib/id";
 import { DEFAULT_SOURCES, type Source } from "@/lib/tracks";
-import { fetchYouTubeTitle, parseYouTube, type YTRef } from "@/lib/youtube";
+import {
+  fetchYouTubeMeta,
+  makeMixRef,
+  parseYouTube,
+  type YTRef,
+} from "@/lib/youtube";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useHotkey } from "@/hooks/useHotkey";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -60,6 +65,7 @@ export default function MusicPlayerBar({
   // New Link inputs
   const [newLink, setNewLink] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [playAsMix, setPlayAsMix] = useState(true); // Default to continuous Mix / Radio
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -122,29 +128,27 @@ export default function MusicPlayerBar({
   }
 
   function handleNextTrack() {
-    if (current?.kind === "playlist") {
+    // If playing, skip to next song in the YouTube mix/playlist
+    if (ytNext) {
       ytNext();
       return;
     }
-    if (allSources.length <= 1) {
-      if (allSources.length === 1) ytNext();
-      return;
+    if (allSources.length > 1) {
+      const nextIdx = (currentIndex + 1) % allSources.length;
+      setSelectedId(allSources[nextIdx].id);
     }
-    const nextIdx = (currentIndex + 1) % allSources.length;
-    setSelectedId(allSources[nextIdx].id);
   }
 
   function handlePrevTrack() {
-    if (current?.kind === "playlist") {
+    // If playing, skip to previous song in the YouTube mix/playlist
+    if (ytPrev) {
       ytPrev();
       return;
     }
-    if (allSources.length <= 1) {
-      if (allSources.length === 1) ytPrev();
-      return;
+    if (allSources.length > 1) {
+      const prevIdx = (currentIndex - 1 + allSources.length) % allSources.length;
+      setSelectedId(allSources[prevIdx].id);
     }
-    const prevIdx = (currentIndex - 1 + allSources.length) % allSources.length;
-    setSelectedId(allSources[prevIdx].id);
   }
 
   function toggleMute() {
@@ -160,19 +164,31 @@ export default function MusicPlayerBar({
 
   async function handleAddCustomSource(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = parseYouTube(newLink);
+    let parsed = parseYouTube(newLink);
     if (!parsed) {
       setAddError("Enter a valid YouTube video or playlist URL.");
       return;
     }
+
+    // If user wants continuous Mix/Radio and passed a single video, convert to Mix
+    if (playAsMix && parsed.kind === "video") {
+      parsed = makeMixRef(parsed.ref);
+    }
+
     setIsAdding(true);
     setAddError("");
     try {
-      const fetchedTitle = await fetchYouTubeTitle(parsed);
+      const meta = await fetchYouTubeMeta(parsed);
+      const isMix = parsed.kind === "playlist" || parsed.ref.startsWith("RD");
       const label =
         newTitle.trim() ||
-        fetchedTitle ||
-        (parsed.kind === "playlist" ? "Saved Playlist" : "Saved Audio Link");
+        meta?.title ||
+        (isMix ? "YouTube Mix" : "YouTube Audio");
+
+      const artistName = meta?.artist || (isMix ? "YouTube Mix" : "YouTube Artist");
+      const coverImg =
+        meta?.thumbnail ||
+        "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=200&q=80";
 
       const newSrc: Source = {
         id: uid(),
@@ -180,9 +196,9 @@ export default function MusicPlayerBar({
         ref: parsed.ref,
         videoId: parsed.videoId,
         title: label,
-        artist: parsed.kind === "playlist" ? "YouTube Mix" : "YouTube",
-        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=200&q=80",
-        duration: parsed.kind === "playlist" ? "Mix / Playlist" : "Audio Link",
+        artist: artistName,
+        cover: coverImg,
+        duration: isMix ? "Continuous Mix" : "Single Video",
       };
 
       setCustomSources((prev) => [newSrc, ...prev]);
@@ -272,9 +288,15 @@ export default function MusicPlayerBar({
                 placeholder="Paste YouTube video, Mix, or playlist URL…"
                 className="w-full rounded-xl bg-zinc-900 border border-zinc-700/80 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ff4d6d]"
               />
-              <p className="text-[10px] text-zinc-500 px-1">
-                Tip: Mixes (e.g. Aster Aweke Mix with <code className="text-zinc-400 font-mono">list=RD...</code>) play continuously with Next/Prev track skip.
-              </p>
+              <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer px-1 py-0.5 select-none hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={playAsMix}
+                  onChange={(e) => setPlayAsMix(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded bg-zinc-900 border-zinc-700 accent-[#ff4d6d] cursor-pointer"
+                />
+                <span>Play as continuous YouTube Mix / Radio (endless queue)</span>
+              </label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -357,8 +379,12 @@ export default function MusicPlayerBar({
                           )}
                           <span className="truncate">{s.title}</span>
                         </div>
-                        <div className="text-[10px] text-zinc-400 truncate">
-                          {s.artist || "Saved Audio"} · {s.duration || "Audio"}
+                        <div className="text-[10px] text-zinc-400 truncate flex items-center gap-1.5">
+                          <span className="truncate">{s.artist || "YouTube"}</span>
+                          <span>•</span>
+                          <span className={cn(s.kind === "playlist" ? "text-[#ff4d6d] font-medium" : "text-zinc-500")}>
+                            {s.kind === "playlist" ? "Continuous Mix" : "Single Video"}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -437,7 +463,18 @@ export default function MusicPlayerBar({
             </span>
           </div>
           <div className="text-[10px] text-zinc-400 truncate">
-            {current ? current.artist || "Saved link" : "+ Paste a YouTube link"}
+            {current ? (
+              <span className="flex items-center gap-1.5 truncate">
+                <span className="truncate">{current.artist || "YouTube"}</span>
+                {current.kind === "playlist" && (
+                  <span className="text-[#ff4d6d] font-semibold text-[9px] shrink-0">
+                    • Mix
+                  </span>
+                )}
+              </span>
+            ) : (
+              "+ Paste a YouTube link"
+            )}
           </div>
         </div>
 
