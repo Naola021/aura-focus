@@ -52,6 +52,11 @@ export default function MusicPlayerBar({
     "aura:savedAudioLinks",
     []
   );
+  // Persist deleted tracks (allows deleting default tracks too)
+  const [deletedSourceIds, setDeletedSourceIds] = useLocalStorage<string[]>(
+    "aura:deletedAudioIds",
+    []
+  );
   const [selectedId, setSelectedId, selectedReady] = useLocalStorage<string>(
     "aura:selectedAudioId",
     ""
@@ -90,10 +95,10 @@ export default function MusicPlayerBar({
     });
   }, [customSources]);
 
-  const allSources = useMemo(
-    () => [...DEFAULT_SOURCES, ...sanitizedCustomSources],
-    [sanitizedCustomSources]
-  );
+  const allSources = useMemo(() => {
+    const combined = [...DEFAULT_SOURCES, ...sanitizedCustomSources];
+    return combined.filter((s) => !deletedSourceIds.includes(s.id));
+  }, [sanitizedCustomSources, deletedSourceIds]);
 
   const currentIndex = allSources.findIndex((s) => s.id === selectedId);
   const current: Source | null =
@@ -201,14 +206,13 @@ export default function MusicPlayerBar({
     }
   }
 
-  function handleDeleteCustomSource(id: string) {
-    setCustomSources((prev) => {
-      const filtered = prev.filter((s) => s.id !== id);
-      if (selectedId === id) {
-        setSelectedId(filtered[0]?.id || "");
-      }
-      return filtered;
-    });
+  function handleDeleteSource(id: string) {
+    setDeletedSourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setCustomSources((prev) => prev.filter((s) => s.id !== id));
+    if (selectedId === id) {
+      const remaining = allSources.filter((s) => s.id !== id);
+      setSelectedId(remaining[0]?.id || "");
+    }
   }
 
   return (
@@ -379,25 +383,36 @@ export default function MusicPlayerBar({
                         </div>
                       ) : null}
 
-                      {!s.builtIn && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCustomSource(s.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-400 transition"
-                          title="Delete saved link"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSource(s.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-400 transition"
+                        title="Delete audio track"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
                 );
               })
             )}
           </div>
+
+          {/* Optional restore defaults if any was deleted */}
+          {deletedSourceIds.length > 0 && (
+            <div className="pt-2 border-t border-zinc-800/80 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDeletedSourceIds([])}
+                className="text-[10px] text-zinc-500 hover:text-zinc-300 transition"
+              >
+                Restore default tracks
+              </button>
+            </div>
+          )}
         </div>
       )}
 
