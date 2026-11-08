@@ -1,51 +1,55 @@
 import { NextResponse } from "next/server";
 
-// Permanent Master Index Object on restful-api.dev
-const MASTER_INDEX_ID = "ff808181a09d98f701a1bc788c8e6813";
-const REST_API_URL = "https://api.restful-api.dev/objects";
+// High-capacity JSON Storage backend (supports full history, custom mixes, tasks)
+const MASTER_REGISTRY_BIN_ID = "febfcbc";
+const STORAGE_BASE_URL = "https://extendsclass.com/api/json-storage/bin";
 
 type AccountRef = {
-  objectId: string;
+  binId: string;
   passcode: string;
   name: string;
   updatedAt: number;
+};
+
+type MasterRegistry = {
+  _type: string;
+  accounts: Record<string, AccountRef>;
 };
 
 function normalizeAccountKey(raw: string): string {
   return raw.trim().toLowerCase().replace(/[^a-z0-9@._-]/g, "");
 }
 
-async function getMasterIndex(): Promise<{ id: string; accounts: Record<string, AccountRef> }> {
+async function getMasterRegistry(): Promise<{ accounts: Record<string, AccountRef> }> {
   try {
-    const res = await fetch(`${REST_API_URL}/${MASTER_INDEX_ID}`, {
+    const res = await fetch(`${STORAGE_BASE_URL}/${MASTER_REGISTRY_BIN_ID}`, {
       cache: "no-store",
     });
-    if (!res.ok) throw new Error("Failed to load master index");
-    const json = await res.json();
+    if (!res.ok) throw new Error("Failed to load master registry");
+    const json: MasterRegistry = await res.json();
     return {
-      id: MASTER_INDEX_ID,
-      accounts: json?.data?.accounts || {},
+      accounts: json?.accounts || {},
     };
   } catch (err) {
-    console.error("Master index read error:", err);
-    return { id: MASTER_INDEX_ID, accounts: {} };
+    console.error("Master registry read error:", err);
+    return { accounts: {} };
   }
 }
 
-async function updateMasterIndex(accounts: Record<string, AccountRef>): Promise<boolean> {
+async function updateMasterRegistry(accounts: Record<string, AccountRef>): Promise<boolean> {
   try {
-    const res = await fetch(`${REST_API_URL}/${MASTER_INDEX_ID}`, {
+    const res = await fetch(`${STORAGE_BASE_URL}/${MASTER_REGISTRY_BIN_ID}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: "Aura Focus Engine - Master Accounts Index",
-        data: { accounts },
+        _type: "Aura Master Accounts Registry",
+        accounts,
       }),
       cache: "no-store",
     });
     return res.ok;
   } catch (err) {
-    console.error("Master index write error:", err);
+    console.error("Master registry write error:", err);
     return false;
   }
 }
@@ -72,10 +76,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const master = await getMasterIndex();
+    const master = await getMasterRegistry();
     const existingRef = master.accounts[key];
 
-    // ACTION: LOGIN / REGISTER
+    // ACTION 1: LOGIN / REGISTER
     if (action === "login") {
       if (existingRef) {
         // Verify Passcode
@@ -86,22 +90,25 @@ export async function POST(req: Request) {
           );
         }
 
-        // Fetch user data from object
-        const objRes = await fetch(`${REST_API_URL}/${existingRef.objectId}`, { cache: "no-store" });
-        if (objRes.ok) {
-          const objJson = await objRes.json();
+        // Fetch user data from their bin
+        const binRes = await fetch(`${STORAGE_BASE_URL}/${existingRef.binId}`, {
+          cache: "no-store",
+        });
+
+        if (binRes.ok) {
+          const binJson = await binRes.json();
           return NextResponse.json({
             success: true,
             account: key,
-            objectId: existingRef.objectId,
-            payload: objJson?.data?.payload || null,
+            binId: existingRef.binId,
+            payload: binJson?.payload || binJson || null,
             lastSyncedAt: existingRef.updatedAt || Date.now(),
             isNew: false,
           });
         }
       }
 
-      // If account does not exist yet -> Register it!
+      // If account does not exist yet -> Register new bin!
       const initialPayload = payload || {
         profile: {
           name: key.includes("@") ? key.split("@")[0] : account.trim(),
@@ -110,49 +117,49 @@ export async function POST(req: Request) {
         },
       };
 
-      const createRes = await fetch(REST_API_URL, {
+      const now = Date.now();
+      const createRes = await fetch(STORAGE_BASE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `Aura User - ${key}`,
-          data: {
-            account: key,
-            payload: initialPayload,
-            updatedAt: Date.now(),
-          },
+          account: key,
+          payload: initialPayload,
+          updatedAt: now,
         }),
       });
 
       if (!createRes.ok) {
+        const errorText = await createRes.text().catch(() => "");
+        console.error("Cloud storage creation error:", errorText);
         return NextResponse.json(
-          { error: "Could not create cloud account object" },
+          { error: `Could not create cloud account object: ${errorText || createRes.statusText}` },
           { status: 500 }
         );
       }
 
       const createdObj = await createRes.json();
-      const objectId = createdObj.id;
+      const binId = createdObj.id;
 
       master.accounts[key] = {
-        objectId,
+        binId,
         passcode: cleanPasscode,
         name: account.trim(),
-        updatedAt: Date.now(),
+        updatedAt: now,
       };
 
-      await updateMasterIndex(master.accounts);
+      await updateMasterRegistry(master.accounts);
 
       return NextResponse.json({
         success: true,
         account: key,
-        objectId,
+        binId,
         payload: initialPayload,
-        lastSyncedAt: Date.now(),
+        lastSyncedAt: now,
         isNew: true,
       });
     }
 
-    // ACTION: SYNC / SAVE
+    // ACTION 2: SYNC / SAVE
     if (action === "sync") {
       if (!existingRef) {
         return NextResponse.json({ error: "Account not found. Please sign in first." }, { status: 404 });
@@ -163,26 +170,24 @@ export async function POST(req: Request) {
       }
 
       const now = Date.now();
-      const putRes = await fetch(`${REST_API_URL}/${existingRef.objectId}`, {
+      const putRes = await fetch(`${STORAGE_BASE_URL}/${existingRef.binId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `Aura User - ${key}`,
-          data: {
-            account: key,
-            payload: payload || {},
-            updatedAt: now,
-          },
+          account: key,
+          payload: payload || {},
+          updatedAt: now,
         }),
         cache: "no-store",
       });
 
       if (!putRes.ok) {
-        return NextResponse.json({ error: "Failed to update cloud data" }, { status: 500 });
+        const errText = await putRes.text().catch(() => "");
+        return NextResponse.json({ error: `Failed to update cloud data: ${errText}` }, { status: 500 });
       }
 
       master.accounts[key].updatedAt = now;
-      await updateMasterIndex(master.accounts);
+      await updateMasterRegistry(master.accounts);
 
       return NextResponse.json({
         success: true,
