@@ -82,10 +82,12 @@
     - Added auto-advance on track completion (`onEnded`) to play through the saved audio queue continuously.
     - Direct player state querying in `toggle()` ensuring immediate play/pause response.
     - Added ability to delete default tracks too, with persistent tracking (`aura:deletedAudioIds`) and optional "Restore default tracks" option.
+    - Added custom default track selection: any saved link (like MEZMUR or Bruno Mars) can be set as default with a single click, showing the highlighted `[★ Default]` badge, and automatically loading as the primary track on boot.
+    - Replaced broken Lofi thumbnail with permanent 200 OK link (`5qap5aO4i9A`) and added Bruno Mars Mix (`LjhCEhWiKXk`).
   - **Quality Gates & Deployment**: `tsc --noEmit` (0 errors), `npm run lint` (0 errors), `npm run build` (successful Turbopack production compilation). Pushed to `origin main` for automatic Vercel production deployment.
 
 ## Current Trajectory
-- Complete: All music tracks (default and custom) are fully deletable and customizable; playback and link fetching verified live in production.
+- Complete: Any saved music link can be set as default; custom links and queue state fully operational on live production.
 
 ## Squad Status
 | Agent | Task | Status |
