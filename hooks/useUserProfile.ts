@@ -1,23 +1,55 @@
 "use client";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useLocalStorage } from "./useLocalStorage";
 import type { DailyTargetLevel, UserProfile } from "@/lib/types";
 
 const INITIAL_PROFILE: UserProfile = {
-  name: "Erosen",
+  name: "Tony Stark",
   avatar: "/aura-logo.png",
   dailyTarget: {
     level: "steady",
     hours: 2,
   },
+  weeklyTargetHours: 14,
 };
 
 export function useUserProfile() {
-  const [profile, setProfile] = useLocalStorage<UserProfile>("aura:profile", INITIAL_PROFILE);
+  const [profile, setProfile, ready] = useLocalStorage<UserProfile>("aura:profile", INITIAL_PROFILE);
+
+  // Auto-migrate old "Erosen" default or missing weekly target
+  useEffect(() => {
+    if (!ready) return;
+    let shouldUpdate = false;
+    const newProfile = { ...profile };
+
+    if (!profile.name || profile.name.trim().toLowerCase() === "erosen") {
+      newProfile.name = "Tony Stark";
+      shouldUpdate = true;
+    }
+    if (!newProfile.weeklyTargetHours || typeof newProfile.weeklyTargetHours !== "number") {
+      newProfile.weeklyTargetHours = 14;
+      shouldUpdate = true;
+    }
+
+    if (shouldUpdate) {
+      setProfile(newProfile);
+    }
+  }, [ready, profile, setProfile]);
 
   const setName = useCallback(
     (name: string) => {
-      setProfile((prev) => ({ ...prev, name: name.trim() || "User" }));
+      setProfile((prev) => ({ ...prev, name: name.trim() || "Tony Stark" }));
+    },
+    [setProfile]
+  );
+
+  const setWeeklyTarget = useCallback(
+    (weeklyHours: number) => {
+      const hours = Math.max(1, Math.min(100, Math.round(weeklyHours)));
+      setProfile((prev) => ({
+        ...prev,
+        weeklyTargetHours: hours,
+      }));
     },
     [setProfile]
   );
@@ -32,12 +64,26 @@ export function useUserProfile() {
         custom: customHours ?? 2,
       };
 
+      const hours = level === "custom" && customHours ? customHours : hoursMap[level];
+
       setProfile((prev) => ({
         ...prev,
         dailyTarget: {
           level,
-          hours: level === "custom" && customHours ? customHours : hoursMap[level],
+          hours,
         },
+      }));
+    },
+    [setProfile]
+  );
+
+  const setAccountInfo = useCallback(
+    (email?: string, accountId?: string) => {
+      setProfile((prev) => ({
+        ...prev,
+        accountEmail: email,
+        accountId: accountId,
+        lastSyncedAt: Date.now(),
       }));
     },
     [setProfile]
@@ -47,5 +93,8 @@ export function useUserProfile() {
     profile,
     setName,
     setDailyTarget,
+    setWeeklyTarget,
+    setAccountInfo,
+    ready,
   };
 }

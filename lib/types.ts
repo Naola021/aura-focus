@@ -13,7 +13,7 @@ export type Project = {
 
 export type Subject = {
   id: string;
-  name: string;        // e.g. "Editing", "Coding", "Writing"
+  name: string;        // e.g. "Deep Work", "Coding", "Reading", "Writing"
   color: string;       // hex color code
   icon?: string;
 };
@@ -35,6 +35,10 @@ export type UserProfile = {
   name: string;
   avatar: string;
   dailyTarget: DailyTarget;
+  weeklyTargetHours: number; // e.g. 14 hours / week
+  accountEmail?: string;
+  accountId?: string;
+  lastSyncedAt?: number;
 };
 
 export type HistoryEntry = {
@@ -52,9 +56,8 @@ export type HistoryEntry = {
 };
 
 export const DEFAULT_SUBJECTS: Subject[] = [
-  { id: "sub-editing", name: "Editing", color: "#8b5cf6" }, // Purple (from screenshot)
-  { id: "sub-coding", name: "Coding", color: "#3b82f6" },   // Blue
   { id: "sub-deepwork", name: "Deep Work", color: "#ff4d6d" }, // Coral/Pink
-  { id: "sub-reading", name: "Reading", color: "#10b981" }, // Emerald
-  { id: "sub-writing", name: "Writing", color: "#f59e0b" }, // Amber
+  { id: "sub-coding", name: "Coding", color: "#3b82f6" },     // Blue
+  { id: "sub-reading", name: "Reading", color: "#10b981" },   // Emerald
+  { id: "sub-writing", name: "Writing", color: "#f59e0b" },   // Amber
 ];

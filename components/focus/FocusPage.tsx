@@ -9,7 +9,8 @@ import {
   Menu,
   Play,
   User,
-  X
+  X,
+  Cloud,
 } from "lucide-react";
 import FocusStudioModal from "./FocusStudioModal";
 import ImmersiveFocusView from "./ImmersiveFocusView";
@@ -20,6 +21,8 @@ import IconButton from "./ui/IconButton";
 import Sidebar, { type NavTab } from "../navigation/Sidebar";
 import StatsView from "../stats/StatsView";
 import ProfileView from "../profile/ProfileView";
+import AuthSyncModal from "../auth/AuthSyncModal";
+import { useAuthSync } from "@/hooks/useAuthSync";
 import { useHistory } from "@/hooks/useHistory";
 import { useHotkey } from "@/hooks/useHotkey";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -32,7 +35,7 @@ import { cn } from "@/lib/cn";
 import { formatHMS } from "@/lib/format";
 import { uid } from "@/lib/id";
 import { ensureNotificationPermission, notify } from "@/lib/notify";
-import { todayStats } from "@/lib/stats";
+import { todayStats, weekStats } from "@/lib/stats";
 import type { SessionTask, Subject } from "@/lib/types";
 import {
   DEFAULT_WALLPAPER,
@@ -69,16 +72,18 @@ export default function FocusPage() {
     }
   }
 
-  // Profile & Subjects hooks (Zero Coins, Zero Pro)
-  const { profile, setName, setDailyTarget } = useUserProfile();
+  // Profile & Subjects hooks
+  const { profile, setName, setDailyTarget, setWeeklyTarget } = useUserProfile();
   const { subjects, addSubject, deleteSubject, getSubject } = useSubjects();
   const history = useHistory();
   const pip = usePictureInPicture();
+  const { session, isSyncing, syncError, login, syncToCloud, logout } = useAuthSync();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Active Session Config
   const [selectedSubjectId, setSelectedSubjectId] = useLocalStorage<string>(
     "aura:selectedSubjectId",
-    subjects[0]?.id || "sub-editing"
+    subjects[0]?.id || "sub-deepwork"
   );
   const [durationHours, setDurationHours] = useLocalStorage<number>("aura:durationHours", 0);
   const [durationMinutes, setDurationMinutes] = useLocalStorage<number>("aura:durationMinutes", 45);
@@ -86,10 +91,8 @@ export default function FocusPage() {
     "aura:sessionMode",
     "timed"
   );
-  const [sessionTasks, setSessionTasks] = useLocalStorage<SessionTask[]>("aura:sessionTasks", [
-    { id: "task-1", text: "Outline main draft", done: false },
-    { id: "task-2", text: "Polish and review", done: false },
-  ]);
+  // Zero default placeholder tasks per user request
+  const [sessionTasks, setSessionTasks] = useLocalStorage<SessionTask[]>("aura:sessionTasks", []);
   const [wallpaper, setWallpaper] = useLocalStorage<WallpaperState>(
     "focus:wallpaper",
     DEFAULT_WALLPAPER
@@ -97,13 +100,30 @@ export default function FocusPage() {
   const [focusTheme, setFocusTheme] = useLocalStorage<FocusTheme>("aura:theme", "classic");
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
 
-  // Active subject object
+  // Auto-cleanup legacy dummy tasks & legacy "sub-editing" subject
+  useEffect(() => {
+    if (
+      sessionTasks.length === 2 &&
+      sessionTasks[0]?.text === "Outline main draft" &&
+      sessionTasks[1]?.text === "Polish and review"
+    ) {
+      setSessionTasks([]);
+    }
+  }, [sessionTasks, setSessionTasks]);
+
+  useEffect(() => {
+    if (selectedSubjectId === "sub-editing") {
+      setSelectedSubjectId(subjects[0]?.id || "sub-deepwork");
+    }
+  }, [selectedSubjectId, subjects, setSelectedSubjectId]);
+
+  // Active subject object (fallback: Deep Work)
   const currentSubject: Subject =
     getSubject(selectedSubjectId) ||
     subjects[0] || {
-      id: "general",
-      name: "Editing",
-      color: "#8b5cf6",
+      id: "sub-deepwork",
+      name: "Deep Work",
+      color: "#ff4d6d",
     };
 
   // Target duration in ms
@@ -163,6 +183,47 @@ export default function FocusPage() {
     timer.reset();
     setSessionStartTime(null);
   }
+
+  async function handleLogin(account: string, passcode: string) {
+    const currentPayload = {
+      profile: {
+        name: profile.name,
+        weeklyTargetHours: profile.weeklyTargetHours || 14,
+      },
+      subjects,
+      sessionTasks,
+      history: history.entries,
+    };
+
+    const res = await login(account, passcode, currentPayload);
+    if (res.success && res.cloudData) {
+      if (res.cloudData.profile?.name) {
+        setName(res.cloudData.profile.name);
+      }
+      if (res.cloudData.profile?.weeklyTargetHours) {
+        setWeeklyTarget(res.cloudData.profile.weeklyTargetHours);
+      }
+      if (res.cloudData.sessionTasks) {
+        setSessionTasks(res.cloudData.sessionTasks);
+      }
+    }
+    return res;
+  }
+
+  async function handleSyncCloud() {
+    return syncToCloud({
+      profile: {
+        name: profile.name,
+        weeklyTargetHours: profile.weeklyTargetHours || 14,
+      },
+      subjects,
+      sessionTasks,
+      history: history.entries,
+      updatedAt: Date.now(),
+    });
+  }
+
+  const weeklyMetrics = weekStats(history.entries, profile.weeklyTargetHours || 14);
 
   function handleAddTime(extraMinutes: number) {
     setDurationMinutes((prev) => prev + extraMinutes);
@@ -270,6 +331,8 @@ export default function FocusPage() {
             profile={profile}
             streakCount={today.streakCount}
             onCollapse={() => setIsSidebarOpen(false)}
+            session={session}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
         </div>
       )}
@@ -318,6 +381,21 @@ export default function FocusPage() {
 
             {/* Header Action Tools */}
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                  session.isSignedIn
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                    : "border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                )}
+                title={session.isSignedIn ? `Signed in as ${session.account}` : "Sign in to sync across devices"}
+              >
+                <Cloud size={13} className={session.isSignedIn ? "text-emerald-400" : "text-[#ff4d6d]"} />
+                <span className="hidden sm:inline">{session.isSignedIn ? "Synced" : "Sign in"}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsStartModalOpen(true)}
@@ -429,10 +507,28 @@ export default function FocusPage() {
               profile={profile}
               onUpdateName={setName}
               onSetDailyTarget={setDailyTarget}
+              onSetWeeklyTarget={setWeeklyTarget}
+              session={session}
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+              currentWeeklyHoursFocused={weeklyMetrics.hours}
             />
           )}
         </main>
       </div>
+
+      {/* Cloud Sync & Multi-Device Auth Modal */}
+      <AuthSyncModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        session={session}
+        isSyncing={isSyncing}
+        syncError={syncError}
+        onLogin={handleLogin}
+        onSync={handleSyncCloud}
+        onLogout={logout}
+        currentProfileName={profile.name}
+        weeklyTargetHours={profile.weeklyTargetHours || 14}
+      />
 
       {/* Start Focus Modal (Step 1 Setup + Step 2 Attach Tasks) */}
       <StartSessionModal

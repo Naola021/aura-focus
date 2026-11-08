@@ -214,3 +214,24 @@ export function formatDurationCompact(ms: number) {
   if (mins === 0) return `${hours}h`;
   return `${hours}h ${mins}m`;
 }
+
+export function weekStats(entries: HistoryEntry[], weeklyTargetHours = 14) {
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // Monday = 0
+  const mondayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day, 0, 0, 0, 0).getTime();
+
+  const thisWeekEntries = entries.filter((e) => e.endedAt >= mondayStart);
+  const totalMs = thisWeekEntries.reduce((sum, e) => sum + e.durationMs, 0);
+  const targetMs = weeklyTargetHours * 3600 * 1000;
+  const percent = targetMs > 0 ? Math.min(100, Math.round((totalMs / targetMs) * 100)) : 0;
+  const hours = totalMs / (3600 * 1000);
+
+  return {
+    totalMs,
+    targetMs,
+    hours,
+    targetHours: weeklyTargetHours,
+    percent,
+    sessionsCount: thisWeekEntries.length,
+  };
+}
