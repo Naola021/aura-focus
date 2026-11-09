@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   BarChart2,
+  Flame,
   Home as HomeIcon,
   Maximize2,
   Menu,
+  MoreHorizontal,
   Play,
-  User,
   X,
 } from "lucide-react";
 import FocusStudioModal from "./FocusStudioModal";
@@ -237,6 +238,14 @@ export default function FocusPage() {
   useHotkey("f", toggleFullscreen);
   useHotkey("p", pip.open);
 
+  function handleToggleMenu() {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setMobileMenuOpen((prev) => !prev);
+    } else {
+      setIsSidebarOpen((prev) => !prev);
+    }
+  }
+
   const today = mounted
     ? todayStats(history.entries, profile.dailyTarget?.hours || 2)
     : { todayMs: 0, todayMinutes: 0, goalProgress: 0, streakCount: 0, totalHours: 0 };
@@ -250,14 +259,14 @@ export default function FocusPage() {
 
       {/* Floating Top-Left "aura" Branding & Menu Pill (When sidebar is collapsed on focus view) */}
       {(!isSidebarOpen || isFocusView) && (
-        <div className="fixed top-4 left-4 sm:left-6 z-30 flex items-center gap-2 animate-fade-in">
+        <div className="fixed top-3 left-3 sm:top-4 sm:left-6 z-30 flex items-center gap-2 animate-fade-in">
           <button
             type="button"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="inline-flex items-center gap-3.5 rounded-full border border-zinc-800/80 bg-zinc-950/85 pl-2 pr-5 py-2 text-xs font-semibold text-zinc-300 backdrop-blur-xl shadow-2xl hover:bg-zinc-900 hover:text-white transition active:scale-95 group"
+            onClick={handleToggleMenu}
+            className="inline-flex items-center gap-2 sm:gap-3.5 rounded-full border border-zinc-800/80 bg-zinc-950/85 pl-1.5 sm:pl-2 pr-3 sm:pr-5 py-1 sm:py-2 text-xs font-semibold text-zinc-300 backdrop-blur-xl shadow-2xl hover:bg-zinc-900 hover:text-white transition active:scale-95 group"
             title={isSidebarOpen ? "Collapse sidebar" : "Open navigation menu"}
           >
-            <div className="relative h-12 w-12 shrink-0 rounded-2xl overflow-hidden ring-2 ring-[#ff4d6d]/40 shadow-lg shadow-[#ff4d6d]/20 bg-zinc-950">
+            <div className="relative h-8 w-8 sm:h-12 sm:w-12 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden ring-2 ring-[#ff4d6d]/40 shadow-lg shadow-[#ff4d6d]/20 bg-zinc-950">
               <Image
                 src="/aura-logo.png"
                 alt="aura"
@@ -266,8 +275,8 @@ export default function FocusPage() {
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
-            <span className="font-black text-base tracking-[0.2em] text-white">aura</span>
-            <Menu size={16} className="text-zinc-400 group-hover:text-white transition ml-0.5" />
+            <span className="font-black text-sm sm:text-base tracking-[0.18em] sm:tracking-[0.2em] text-white">aura</span>
+            <Menu size={15} className="text-zinc-400 group-hover:text-white transition ml-0.5" />
           </button>
         </div>
       )}
@@ -349,55 +358,111 @@ export default function FocusPage() {
           </header>
         )}
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile Navigation Drawer with Click-to-Dismiss Backdrop */}
         {mobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
-            <div className="w-64 h-full bg-[#0d0d12] border-r border-zinc-800 p-5 flex flex-col justify-between">
+          <div
+            className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-fade-in flex"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <div
+              className="w-72 max-w-[82vw] h-full bg-[#09090c]/98 border-r border-zinc-800 p-5 flex flex-col justify-between shadow-2xl select-none"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="space-y-6">
-                <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-11 w-11 shrink-0 rounded-2xl overflow-hidden ring-2 ring-[#ff4d6d]/40 shadow-lg bg-zinc-950">
+                {/* Brand Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-800/80">
+                  <div
+                    onClick={() => handleTabChange("home")}
+                    className="flex items-center gap-3 cursor-pointer"
+                  >
+                    <div className="relative h-12 w-12 shrink-0 rounded-2xl overflow-hidden ring-2 ring-[#ff4d6d]/40 shadow-lg shadow-[#ff4d6d]/20 bg-zinc-950">
                       <Image src="/aura-logo.png" alt="aura" fill className="object-cover" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-black tracking-[0.2em] text-white text-base">aura</span>
-                      <span className="text-[9px] font-bold tracking-[0.15em] text-[#ff4d6d]">lets go J.A.R.V.I.S</span>
+                      <span className="font-black tracking-[0.2em] text-white text-lg">aura</span>
+                      <span className="text-[10px] font-bold tracking-[0.16em] text-[#ff4d6d]">lets go J.A.R.V.I.S</span>
                     </div>
                   </div>
-                  <button onClick={() => setMobileMenuOpen(false)}>
-                    <X size={18} className="text-zinc-400" />
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                  >
+                    <X size={20} />
                   </button>
                 </div>
 
-                <nav className="space-y-2">
+                {/* Nav Items (Home & Stats) */}
+                <nav className="space-y-1.5">
                   <button
+                    type="button"
                     onClick={() => handleTabChange("home")}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold",
-                      activeTab === "home" ? "bg-zinc-800 text-white" : "text-zinc-400"
+                      "flex w-full items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-semibold transition active:scale-[0.98]",
+                      activeTab === "home"
+                        ? "bg-zinc-800/90 text-white shadow-sm border border-zinc-700/60"
+                        : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
                     )}
                   >
-                    <HomeIcon size={18} /> Home
+                    <HomeIcon size={18} className={activeTab === "home" ? "text-[#ff4d6d]" : "text-zinc-400"} />
+                    <span>Home</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleTabChange("stats")}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold",
-                      activeTab === "stats" ? "bg-zinc-800 text-white" : "text-zinc-400"
+                      "flex w-full items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-semibold transition active:scale-[0.98]",
+                      activeTab === "stats"
+                        ? "bg-zinc-800/90 text-white shadow-sm border border-zinc-700/60"
+                        : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
                     )}
                   >
-                    <BarChart2 size={18} /> Stats
-                  </button>
-                  <button
-                    onClick={() => handleTabChange("profile")}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold",
-                      activeTab === "profile" ? "bg-zinc-800 text-white" : "text-zinc-400"
-                    )}
-                  >
-                    <User size={18} /> Profile
+                    <BarChart2 size={18} className={activeTab === "stats" ? "text-[#ff4d6d]" : "text-zinc-400"} />
+                    <span>Stats</span>
                   </button>
                 </nav>
+
+                {/* Mobile Start Focus Button */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsStartModalOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#ff4d6d] py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-[#ff4d6d]/25 transition hover:bg-[#ff3355] active:scale-[0.98]"
+                  >
+                    <Play size={16} fill="currentColor" />
+                    <span>Start focus</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom Profile Card */}
+              <div className="pt-4 border-t border-zinc-800/80">
+                <div
+                  onClick={() => handleTabChange("profile")}
+                  className={cn(
+                    "flex items-center justify-between rounded-2xl border p-2.5 cursor-pointer transition select-none",
+                    activeTab === "profile"
+                      ? "border-[#ff4d6d]/50 bg-[#ff4d6d]/10 shadow-md"
+                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900"
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-tr from-[#ff4d6d] to-amber-500 text-white font-black text-sm shadow-md">
+                      {profile.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="truncate">
+                      <div className="text-xs font-bold text-white truncate">{profile.name}</div>
+                      <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+                        <Flame size={11} className="text-[#ff4d6d] fill-[#ff4d6d]" />
+                        <span>{today.streakCount} day streak</span>
+                      </div>
+                    </div>
+                  </div>
+                  <MoreHorizontal size={15} className="text-zinc-500 shrink-0 mr-1" />
+                </div>
               </div>
             </div>
           </div>

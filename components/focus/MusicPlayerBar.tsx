@@ -406,7 +406,7 @@ export default function MusicPlayerBar({
                                 e.stopPropagation();
                                 setDefaultSourceId(s.id);
                               }}
-                              className="opacity-0 group-hover:opacity-100 px-1.5 py-0.2 rounded border border-zinc-700/80 bg-zinc-800 text-[9px] font-medium text-zinc-300 hover:text-white hover:border-[#ff4d6d]/60 transition inline-flex items-center gap-1 shrink-0"
+                              className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 px-1.5 py-0.2 rounded border border-zinc-700/80 bg-zinc-800 text-[9px] font-medium text-zinc-300 hover:text-white hover:border-[#ff4d6d]/60 transition inline-flex items-center gap-1 shrink-0"
                               title="Set this link as your default starting music"
                             >
                               <Star size={9} />
@@ -433,7 +433,7 @@ export default function MusicPlayerBar({
                           e.stopPropagation();
                           handleDeleteSource(s.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-400 transition"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-400 transition"
                         title="Delete audio track"
                       >
                         <Trash2 size={13} />
@@ -461,7 +461,7 @@ export default function MusicPlayerBar({
       )}
 
       {/* Docked Music Player Bar */}
-      <div className="flex items-center gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/85 px-3 py-1.5 shadow-2xl backdrop-blur-2xl text-zinc-200 select-none">
+      <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/85 px-2.5 sm:px-3 py-1.5 shadow-2xl backdrop-blur-2xl text-zinc-200 select-none max-w-[96vw]">
         {/* Album Artwork thumbnail or Empty State icon */}
         <div
           onClick={onTogglePlaylist}
@@ -493,7 +493,7 @@ export default function MusicPlayerBar({
         {/* Track Title and Artist / Prompt to add link */}
         <div
           onClick={onTogglePlaylist}
-          className="max-w-[130px] sm:max-w-[170px] cursor-pointer"
+          className="max-w-[100px] xs:max-w-[130px] sm:max-w-[170px] cursor-pointer"
           title={current ? `${current.title} - ${current.artist || "Audio"}` : "Click to add a YouTube link"}
         >
           <div className="text-xs font-bold text-zinc-100 truncate flex items-center gap-1">

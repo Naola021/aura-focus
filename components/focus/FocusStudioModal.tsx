@@ -69,31 +69,31 @@ export default function FocusStudioModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none">
       <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl border border-zinc-800 bg-[#0d0d12] shadow-2xl text-zinc-100 flex flex-col md:flex-row h-[85vh] max-h-[700px]">
-        {/* Left Sidebar: Only Background and Theme */}
-        <div className="w-full md:w-56 shrink-0 border-b md:border-b-0 md:border-r border-zinc-800/80 bg-zinc-950/60 p-4 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div>
+        {/* Left / Top Sidebar: Background and Theme Tabs */}
+        <div className="w-full md:w-56 shrink-0 border-b md:border-b-0 md:border-r border-zinc-800/80 bg-zinc-950/60 p-3 sm:p-4 flex flex-col justify-between">
+          <div className="space-y-3 md:space-y-4">
+            <div className="hidden md:block">
               <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-500">
                 Focus studio
               </span>
               <h2 className="text-lg font-bold text-white tracking-tight">Make it yours</h2>
             </div>
 
-            <nav className="space-y-1">
+            <nav className="flex flex-row md:flex-col gap-2 md:gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("background")}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold transition text-left",
+                  "flex-1 md:flex-none flex items-center gap-2.5 sm:gap-3 rounded-2xl px-3 py-2 sm:py-2.5 text-xs font-semibold transition text-left",
                   activeTab === "background"
-                    ? "bg-zinc-800/90 text-white border border-zinc-700/60"
+                    ? "bg-zinc-800/90 text-white border border-zinc-700/60 shadow-sm"
                     : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
                 )}
               >
                 <ImageIcon size={16} className={activeTab === "background" ? "text-[#ff4d6d]" : ""} />
                 <div>
                   <div>Background</div>
-                  <div className="text-[10px] text-zinc-500 font-normal">
+                  <div className="text-[10px] text-zinc-500 font-normal hidden sm:block">
                     {wallpaper.type === "photo" ? "photos" : "preset"}
                   </div>
                 </div>
@@ -103,16 +103,16 @@ export default function FocusStudioModal({
                 type="button"
                 onClick={() => setActiveTab("theme")}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold transition text-left",
+                  "flex-1 md:flex-none flex items-center gap-2.5 sm:gap-3 rounded-2xl px-3 py-2 sm:py-2.5 text-xs font-semibold transition text-left",
                   activeTab === "theme"
-                    ? "bg-zinc-800/90 text-white border border-zinc-700/60"
+                    ? "bg-zinc-800/90 text-white border border-zinc-700/60 shadow-sm"
                     : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
                 )}
               >
                 <Palette size={16} className={activeTab === "theme" ? "text-[#ff4d6d]" : ""} />
                 <div>
                   <div>Theme</div>
-                  <div className="text-[10px] text-zinc-500 font-normal capitalize">
+                  <div className="text-[10px] text-zinc-500 font-normal capitalize hidden sm:block">
                     {currentTheme.name}
                   </div>
                 </div>

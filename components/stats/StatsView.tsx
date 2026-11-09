@@ -232,8 +232,8 @@ export default function StatsView({
         </div>
 
         {/* ACTIVITY HEATMAP (Right 7 Cols) */}
-        <div className="lg:col-span-7 rounded-3xl border border-zinc-800/80 bg-zinc-900/50 p-6 space-y-4 overflow-x-auto">
-          <div className="flex items-center justify-between">
+        <div className="lg:col-span-7 rounded-3xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:p-6 space-y-4 overflow-x-auto">
+          <div className="flex items-center justify-between gap-3 min-w-[280px]">
             <div>
               <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-zinc-400 block">
                 Last 18 weeks · {today.totalHours}h
@@ -244,7 +244,7 @@ export default function StatsView({
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
+            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 shrink-0">
               <span>Less</span>
               <span className="h-2.5 w-2.5 rounded-sm bg-zinc-800" />
               <span className="h-2.5 w-2.5 rounded-sm bg-[#ff4d6d]/30" />
@@ -255,14 +255,14 @@ export default function StatsView({
           </div>
 
           {/* Month labels */}
-          <div className="flex justify-between text-[10px] text-zinc-500 px-6">
+          <div className="flex justify-between text-[10px] text-zinc-500 px-6 min-w-fit">
             {months.map((m) => (
               <span key={m}>{m}</span>
             ))}
           </div>
 
           {/* Heatmap Grid */}
-          <div className="flex gap-1.5 justify-center py-2">
+          <div className="flex gap-1.5 justify-start sm:justify-center py-2 min-w-fit">
             {/* Day of week labels */}
             <div className="flex flex-col justify-between text-[9px] text-zinc-600 pr-1 select-none">
               <span>Mon</span>

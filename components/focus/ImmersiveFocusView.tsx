@@ -138,15 +138,15 @@ export default function ImmersiveFocusView({
       {/* Top Bar: Subject Badge in Center & Top-Right Tasks Pill/Card */}
       <div
         className={cn(
-          "w-full flex items-center justify-between relative z-20 px-2 sm:px-6 transition-all duration-300",
+          "w-full flex items-center justify-between relative z-20 px-1 sm:px-6 transition-all duration-300",
           isCleanMode ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100"
         )}
       >
-        <div className="w-24 hidden sm:block" />
+        <div className="w-20 sm:w-28 shrink-0" />
 
         {/* Center: Subject Pill Tag (e.g. • Editing) */}
         <div className="flex-1 flex justify-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-700/60 bg-zinc-950/70 px-4 py-1 text-xs font-semibold text-zinc-200 backdrop-blur-xl shadow-lg">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-zinc-700/60 bg-zinc-950/70 px-3 sm:px-4 py-1 text-[11px] sm:text-xs font-semibold text-zinc-200 backdrop-blur-xl shadow-lg">
             <span
               className="h-2 w-2 rounded-full"
               style={{
@@ -162,22 +162,22 @@ export default function ImmersiveFocusView({
         </div>
 
         {/* Top Right: Tasks Collapsed Pill OR Expanded Card */}
-        <div className="shrink-0 flex items-center">
+        <div className="w-20 sm:w-28 shrink-0 flex justify-end items-center">
           {!tasksCardOpen ? (
             /* Sleek Collapsed Pill */
             <button
               type="button"
               onClick={() => setTasksCardOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-800/80 bg-zinc-950/80 px-3.5 py-1.5 text-xs font-semibold text-zinc-300 backdrop-blur-xl shadow-xl hover:bg-zinc-900 hover:text-white transition active:scale-95"
+              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-zinc-800/80 bg-zinc-950/80 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-zinc-300 backdrop-blur-xl shadow-xl hover:bg-zinc-900 hover:text-white transition active:scale-95"
             >
-              <ListTodo size={14} className="text-zinc-400" />
+              <ListTodo size={13} className="text-zinc-400" />
               <span>
                 Tasks {completedTasksCount}/{tasks.length}
               </span>
             </button>
           ) : (
             /* Floating Expanded Tasks Card */
-            <div className="fixed top-4 right-4 sm:right-6 z-40 w-72 sm:w-80 rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl backdrop-blur-2xl text-zinc-200 animate-fade-in">
+            <div className="fixed top-4 right-4 sm:right-6 z-40 w-[92vw] max-w-xs sm:w-80 rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl backdrop-blur-2xl text-zinc-200 animate-fade-in">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
                 <span className="text-xs font-bold text-zinc-300">
                   Tasks {completedTasksCount} of {tasks.length}
@@ -285,7 +285,7 @@ export default function ImmersiveFocusView({
         {/* Huge Digital Clock styled by Theme */}
         <div
           className={cn(
-            "text-6xl sm:text-8xl md:text-9xl font-semibold tracking-tight leading-none drop-shadow-2xl select-none text-center pointer-events-auto",
+            "text-5xl xs:text-6xl sm:text-8xl md:text-9xl font-semibold tracking-tight leading-none drop-shadow-2xl select-none text-center pointer-events-auto",
             themeConfig.fontClass,
             themeConfig.timerColor
           )}
@@ -319,7 +319,7 @@ export default function ImmersiveFocusView({
         >
           {/* Progress Bar with theme accent styling */}
           {targetMs > 0 && (
-            <div className="w-64 sm:w-80 md:w-96 mt-4 space-y-1">
+            <div className="w-56 xs:w-64 sm:w-80 md:w-96 mt-4 space-y-1">
               <div className="h-1.5 w-full rounded-full bg-white/20 overflow-hidden backdrop-blur-sm">
                 <div
                   className="h-full rounded-full transition-all duration-300"
@@ -480,8 +480,8 @@ export default function ImmersiveFocusView({
 
           <div className="h-4 w-px bg-zinc-800" />
 
-          {/* Zoom In & Out: ⊖ 100% ⊕ */}
-          <div className="flex items-center gap-0.5">
+          {/* Zoom In & Out: ⊖ 100% ⊕ (Desktop & Tablet) */}
+          <div className="hidden sm:flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => handleZoom(-10)}
@@ -503,7 +503,7 @@ export default function ImmersiveFocusView({
             </button>
           </div>
 
-          <div className="h-4 w-px bg-zinc-800" />
+          <div className="hidden sm:block h-4 w-px bg-zinc-800" />
 
           {/* Settings / Sliders icon: Opens Focus Studio */}
           <button
@@ -520,7 +520,7 @@ export default function ImmersiveFocusView({
             type="button"
             onClick={onToggleFullscreen}
             title="Toggle fullscreen (F)"
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition active:scale-95"
+            className="hidden sm:inline-flex p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition active:scale-95"
           >
             <Maximize2 size={15} />
           </button>
@@ -540,7 +540,7 @@ export default function ImmersiveFocusView({
             type="button"
             onClick={() => setIsTimelapseModalOpen(true)}
             title="Focus Mirror & Timelapse (Coming Soon)"
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition active:scale-95 relative"
+            className="hidden sm:inline-flex p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition active:scale-95 relative"
           >
             <Video size={15} />
             <span className="absolute 0 top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400 shadow-sm" />
@@ -552,7 +552,7 @@ export default function ImmersiveFocusView({
             onClick={onKeepOnTop}
             title={isPipOpen ? "Close popout" : "Popout / Keep on top (P)"}
             className={cn(
-              "p-1.5 rounded-full transition active:scale-95",
+              "hidden sm:inline-flex p-1.5 rounded-full transition active:scale-95",
               isPipOpen
                 ? "bg-white/20 text-white"
                 : "text-zinc-400 hover:text-white hover:bg-zinc-800"
