@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import Image from "next/image";
 import { cn } from "@/lib/cn";
 import type { FocusTheme } from "@/lib/wallpapers";
 
@@ -16,156 +15,13 @@ export default function ThemeAtmosphere({ theme, isCleanMode = false }: Props) {
     case "stark":
       return (
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
-          {/* Tony Stark Helmet Interior Background Photo */}
+          {/* High-Definition Tony Stark Helmet HUD Background */}
           <div
             className="absolute inset-0 bg-center bg-cover bg-no-repeat transition-opacity duration-700"
             style={{
               backgroundImage: "url('/themes/tony-stark-hud.jpg')",
             }}
           />
-
-          {/* Deep Helmet Vignette - curved inner visor shadow framing Tony's face */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_46%,transparent_22%,rgba(5,1,2,0.45)_50%,rgba(0,0,0,0.92)_80%,#000_100%)]" />
-
-          {/* Visor scanlines & reflections */}
-          <div
-            className="absolute inset-0 opacity-20 pointer-events-none"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 42, 85, 0.2) 2px, rgba(255, 42, 85, 0.2) 4px)",
-            }}
-          />
-
-          {/* Horizontal Anamorphic Red Lens Flare across Tony's eyes */}
-          <div className="absolute top-[38%] left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#ff2a55]/65 to-transparent blur-[0.5px] animate-pulse pointer-events-none" />
-          <div className="absolute top-[38%] left-0 right-0 h-[10px] bg-gradient-to-r from-transparent via-[#ff2a55]/20 to-transparent blur-[6px] pointer-events-none" />
-
-          {/* Left HUD Telemetry: Diagnostic Suit Wireframe & Targeting Arc */}
-          {!isCleanMode && (
-            <div className="hidden lg:flex absolute left-8 top-1/2 -translate-y-1/2 flex-col items-start gap-4 text-red-500/90 font-mono select-none pointer-events-none animate-fade-in">
-              {/* Targeting Reticle & Diagnostic Suit Ring */}
-              <div className="relative w-44 h-44 border border-red-500/30 rounded-full flex items-center justify-center">
-                <div className="absolute inset-2 border border-dashed border-red-500/50 rounded-full animate-[spin_40s_linear_infinite]" />
-                <div className="absolute inset-5 border border-red-500/20 rounded-full" />
-                <div className="text-[9px] font-bold tracking-widest text-red-400 text-center leading-tight">
-                  <span className="block text-red-300 font-extrabold">DIAGNOSTIC</span>
-                  <span className="block text-[8px] text-red-500/80">SUIT // MARK VII</span>
-                  <span className="block text-[11px] font-black text-rose-400 mt-1">ARMOR 88%</span>
-                </div>
-              </div>
-
-              {/* Holographic Mark VII Armor Suit Wireframe */}
-              <div className="relative w-44 h-48 rounded-xl overflow-hidden border border-red-500/30 bg-black/60 backdrop-blur-sm p-1.5 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.25)]">
-                <Image
-                  src="/themes/stark-suit-wireframe.jpg"
-                  alt="Mark VII Wireframe"
-                  width={176}
-                  height={192}
-                  unoptimized
-                  className="w-full h-full object-contain mix-blend-screen opacity-95 filter drop-shadow-[0_0_12px_rgba(255,42,85,0.7)]"
-                />
-                <div className="absolute bottom-1.5 left-2 right-2 text-[8px] font-mono text-red-400/80 flex justify-between">
-                  <span>MK-VII</span>
-                  <span>ONLINE</span>
-                </div>
-              </div>
-
-              {/* Warning / Status Banner */}
-              <div className="bg-red-950/60 border border-red-500/60 px-3 py-1.5 rounded-xl text-[10px] tracking-widest shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                <span className="text-red-300 font-bold flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
-                  CRITICAL FOCUS
-                </span>
-                <span className="text-red-400/80 block text-[8px] mt-0.5">SYSTEM ACTIVE // NO DISTRACTION</span>
-              </div>
-
-              {/* Visor digital clockcode */}
-              <div className="text-[11px] font-mono tracking-wider text-red-400/90 bg-black/70 px-2.5 py-1 rounded-lg border border-red-900/60">
-                <span>HUD TIMECODE: 01:25:00</span>
-              </div>
-            </div>
-          )}
-
-          {/* Right HUD Telemetry: Pepper Potts Comms Card & Altitude Ladder */}
-          {!isCleanMode && (
-            <div className="hidden lg:flex absolute right-8 top-1/2 -translate-y-1/2 flex-col items-end gap-4 text-red-500/90 font-mono select-none pointer-events-none animate-fade-in">
-              {/* Holographic Pepper Potts / Jarvis Comms Card */}
-              <div className="w-60 rounded-2xl border border-red-500/60 bg-black/65 backdrop-blur-xl p-3.5 shadow-[0_0_30px_rgba(239,68,68,0.35)] space-y-2.5">
-                <div className="flex items-center justify-between text-[10px] font-bold text-red-300 tracking-wider pb-1.5 border-b border-red-500/40">
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
-                    CALLING.
-                  </span>
-                  <span className="text-[9px] text-red-400 font-mono">J.A.R.V.I.S.5</span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {/* Photo Hologram Avatar */}
-                  <div className="relative h-14 w-14 rounded-xl overflow-hidden border border-red-400/60 bg-black shrink-0 shadow-lg">
-                    <Image
-                      src="/themes/pepper-potts-avatar.jpg"
-                      alt="Pepper Potts"
-                      width={56}
-                      height={56}
-                      unoptimized
-                      className="w-full h-full object-cover filter contrast-110"
-                    />
-                    <div className="absolute inset-0 bg-red-500/20 mix-blend-color pointer-events-none" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_50%,rgba(255,42,85,0.4)_100%)] pointer-events-none" />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-black tracking-wider text-white truncate">PEPPER POTTS</div>
-                    <div className="text-[9px] text-red-400/90 font-semibold tracking-wider">STARK INDUSTRIES</div>
-                    <div className="text-[8px] text-emerald-400 flex items-center gap-1 mt-0.5 font-medium">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      SECURE AUDIO LINK
-                    </div>
-                  </div>
-                </div>
-
-                {/* Audio frequency wave bars */}
-                <div className="flex items-end gap-1 h-5 pt-1 justify-center">
-                  {[6, 12, 18, 9, 14, 8, 16, 11, 7, 15, 10, 5, 13, 8].map((h, i) => (
-                    <span
-                      key={i}
-                      className="w-1 bg-gradient-to-t from-red-600 to-rose-400 rounded-full animate-pulse shadow-[0_0_6px_#ff2a55]"
-                      style={{
-                        height: `${h}px`,
-                        animationDelay: `${i * 70}ms`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Vertical Ladder Telemetry [ 20 | 05 ] */}
-              <div className="flex items-center gap-2 text-[10px] font-mono text-red-400/80 bg-black/60 px-3 py-1 rounded-lg border border-red-900/50">
-                <span>PITCH: 20°</span>
-                <span>·</span>
-                <span className="text-red-300 font-bold">ALT: 05</span>
-              </div>
-            </div>
-          )}
-
-          {/* Center HUD Reticle Brackets framing the timer */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-between w-[320px] xs:w-[380px] sm:w-[500px] h-[220px] sm:h-[260px] opacity-40">
-            <div className="w-full flex justify-between text-[11px] font-mono text-red-500/80">
-              <span>┌── [ J.A.R.V.I.S ]</span>
-              <span>[ LOCK ] ──┐</span>
-            </div>
-            <div className="w-full flex justify-between text-[11px] font-mono text-red-500/80">
-              <span>└── [ MARK VII ]</span>
-              <span>[ FOCUS 100% ] ──┘</span>
-            </div>
-          </div>
-
-          {/* Bottom Stark Telemetry */}
-          {!isCleanMode && (
-            <div className="absolute bottom-20 left-0 right-0 flex justify-center text-[10px] font-mono text-red-400/80 tracking-widest pointer-events-none">
-              <span>[ ARC REACTOR: 100% // J.A.R.V.I.S PROTOCOL: ENGAGED ]</span>
-            </div>
-          )}
         </div>
       );
 

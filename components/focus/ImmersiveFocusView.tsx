@@ -323,20 +323,10 @@ export default function ImmersiveFocusView({
         <div
           className="relative z-10 flex flex-col items-center justify-center my-auto transition-transform duration-200 pointer-events-none w-full"
         >
-          {/* Stark Theme Horizontal Crosshair Laser Reticle Line */}
+          {/* Stark Theme Horizontal Laser Reticle Line */}
           {theme === "stark" && (
-            <div className="absolute top-[38%] left-0 right-0 -translate-y-1/2 flex items-center justify-between pointer-events-none z-0 px-2 sm:px-8">
-              <div className="flex-1 flex items-center">
-                <span className="text-red-500/60 text-xs font-mono select-none">├──</span>
-                <div className="flex-1 h-[1.5px] bg-gradient-to-r from-transparent via-[#ff2e56]/90 to-[#ff2e56]/40 shadow-[0_0_10px_#ff2e56]" />
-                <span className="text-red-500/70 text-xs font-mono select-none mx-2">[</span>
-              </div>
-              <div className="w-[280px] xs:w-[340px] sm:w-[500px] md:w-[700px] shrink-0" />
-              <div className="flex-1 flex items-center">
-                <span className="text-red-500/70 text-xs font-mono select-none mx-2">]</span>
-                <div className="flex-1 h-[1.5px] bg-gradient-to-l from-transparent via-[#ff2e56]/90 to-[#ff2e56]/40 shadow-[0_0_10px_#ff2e56]" />
-                <span className="text-red-500/60 text-xs font-mono select-none">──┤</span>
-              </div>
+            <div className="absolute top-[38%] left-0 right-0 -translate-y-1/2 pointer-events-none z-0">
+              <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#ff3366]/80 to-transparent shadow-[0_0_8px_#ff3366]" />
             </div>
           )}
 
