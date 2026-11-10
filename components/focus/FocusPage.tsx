@@ -48,6 +48,7 @@ export default function FocusPage() {
   const [isStudioModalOpen, setIsStudioModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [focusTheme, setFocusTheme] = useLocalStorage<FocusTheme>("aura:theme", "classic");
 
   useEffect(() => {
     setMounted(true);
@@ -56,8 +57,12 @@ export default function FocusPage() {
       if (p.get("studio")) {
         setIsStudioModalOpen(true);
       }
+      const t = p.get("theme");
+      if (t) {
+        setFocusTheme(t as FocusTheme);
+      }
     }
-  }, []);
+  }, [setFocusTheme]);
 
   // When switching to stats or profile, automatically open the sidebar for easy desktop navigation
   function handleTabChange(tab: NavTab) {
@@ -93,7 +98,6 @@ export default function FocusPage() {
     "focus:wallpaper",
     DEFAULT_WALLPAPER
   );
-  const [focusTheme, setFocusTheme] = useLocalStorage<FocusTheme>("aura:theme", "classic");
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
 
   // Auto-cleanup legacy dummy tasks & legacy "sub-editing" subject

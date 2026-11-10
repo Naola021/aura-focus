@@ -17,6 +17,8 @@ import {
   X,
   Plus,
   Star,
+  GripVertical,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { uid } from "@/lib/id";
@@ -38,6 +40,7 @@ type Props = {
   onCloseVideo: () => void;
   className?: string;
   accentColor?: string;
+  isCleanMode?: boolean;
 };
 
 export default function MusicPlayerBar({
@@ -47,7 +50,72 @@ export default function MusicPlayerBar({
   onCloseVideo,
   className,
   accentColor = "#ff4d6d",
+  isCleanMode = false,
 }: Props) {
+  // Movable / Draggable positioning
+  type Position = { x: number; y: number };
+  const [pos, setPos] = useLocalStorage<Position | null>("aura:musicPos", null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Ignore interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest("button, input, select, textarea, [role='button'], a, [data-no-drag]")) {
+      return;
+    }
+
+    const currentBar = barRef.current;
+    if (!currentBar) return;
+
+    const rect = currentBar.getBoundingClientRect();
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: rect.left,
+      initY: rect.top,
+    };
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !dragStartRef.current) return;
+
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+
+    const barWidth = barRef.current?.offsetWidth || 340;
+    const barHeight = barRef.current?.offsetHeight || 50;
+
+    const maxX = Math.max(10, window.innerWidth - barWidth - 10);
+    const maxY = Math.max(10, window.innerHeight - barHeight - 10);
+
+    const newX = Math.max(10, Math.min(maxX, dragStartRef.current.initX + dx));
+    const newY = Math.max(10, Math.min(maxY, dragStartRef.current.initY + dy));
+
+    setPos({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+    setIsDragging(false);
+    dragStartRef.current = null;
+  };
+
+  const handleResetPosition = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setPos(null);
+  };
+
   // Persist user's saved audio links
   const [customSources, setCustomSources, customReady] = useLocalStorage<Source[]>(
     "aura:savedAudioLinks",
@@ -232,14 +300,30 @@ export default function MusicPlayerBar({
     }
   }
 
+  const isMoved = pos !== null;
+  const openBelow = pos !== null && pos.y < 350;
+
   return (
-    <div className={cn("relative z-20 flex flex-col items-center", className)}>
+    <div
+      ref={barRef}
+      style={isMoved ? { left: `${pos.x}px`, top: `${pos.y}px` } : undefined}
+      className={cn(
+        isMoved
+          ? "fixed z-40 flex flex-col items-center animate-fade-in"
+          : "relative z-20 flex flex-col items-center",
+        isCleanMode && isMoved && "opacity-0 pointer-events-none translate-y-3 transition-all duration-300",
+        className
+      )}
+    >
       {/* Floating Video Player Frame or Background Audio Engine */}
       <div
         className={cn(
           "transition-all duration-300",
           isVideoVisible && current
-            ? "relative mb-3 w-80 sm:w-96 aspect-video rounded-2xl border border-zinc-700/80 bg-black shadow-2xl overflow-hidden animate-fade-in group z-30 opacity-100"
+            ? cn(
+                "w-80 sm:w-96 aspect-video rounded-2xl border border-zinc-700/80 bg-black shadow-2xl overflow-hidden animate-fade-in group z-30 opacity-100",
+                openBelow ? "order-last mt-3" : "mb-3"
+              )
             : "fixed bottom-0 right-0 w-[240px] h-[180px] pointer-events-none -z-50 opacity-[0.01]"
         )}
       >
@@ -262,7 +346,15 @@ export default function MusicPlayerBar({
       {isPlaylistOpen && (
         <div
           ref={popoverRef}
-          className="absolute bottom-full mb-3 w-[92vw] max-w-md rounded-3xl border border-zinc-800 bg-[#121217]/95 p-4 text-zinc-100 shadow-2xl backdrop-blur-2xl animate-fade-in z-40"
+          className={cn(
+            "absolute w-[92vw] max-w-md rounded-3xl border border-zinc-800 bg-[#121217]/95 p-4 text-zinc-100 shadow-2xl backdrop-blur-2xl animate-fade-in z-40",
+            openBelow ? "top-full mt-2.5" : "bottom-full mb-3",
+            pos && pos.x > (typeof window !== "undefined" ? window.innerWidth - 380 : 500)
+              ? "right-0"
+              : pos && pos.x < 120
+              ? "left-0"
+              : "left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0"
+          )}
         >
           <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
             <div className="flex items-center gap-2">
@@ -460,8 +552,39 @@ export default function MusicPlayerBar({
         </div>
       )}
 
-      {/* Docked Music Player Bar */}
-      <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/85 px-2.5 sm:px-3 py-1.5 shadow-2xl backdrop-blur-2xl text-zinc-200 select-none max-w-[96vw]">
+      {/* Docked or Floating Draggable Music Player Bar */}
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className={cn(
+          "flex items-center gap-1.5 sm:gap-2.5 rounded-2xl border border-zinc-800/80 bg-zinc-950/90 px-2 sm:px-3 py-1.5 shadow-2xl backdrop-blur-2xl text-zinc-200 select-none max-w-[96vw] transition-shadow",
+          isDragging ? "cursor-grabbing ring-2 ring-[#ff4d6d]/60 shadow-black/80" : "cursor-default"
+        )}
+      >
+        {/* Drag Handle Grip */}
+        <div
+          onPointerDown={handlePointerDown}
+          onDoubleClick={handleResetPosition}
+          className="p-1 -ml-0.5 text-zinc-500 hover:text-white cursor-grab active:cursor-grabbing transition rounded-lg hover:bg-zinc-800/80 touch-none flex items-center justify-center shrink-0"
+          title="Drag to move anywhere · Double-click to dock back"
+        >
+          <GripVertical size={13} />
+        </div>
+
+        {/* Snap-back / Reset Dock Button (Shown when moved away from default dock) */}
+        {isMoved && (
+          <button
+            type="button"
+            onClick={handleResetPosition}
+            title="Dock back to bottom"
+            className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800/80 rounded-lg transition active:scale-95 shrink-0"
+          >
+            <RotateCcw size={12} />
+          </button>
+        )}
+
         {/* Album Artwork thumbnail or Empty State icon */}
         <div
           onClick={onTogglePlaylist}

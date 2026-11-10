@@ -23,6 +23,7 @@ import {
 import MusicPlayerBar from "./MusicPlayerBar";
 import TimelapseModal from "./TimelapseModal";
 import ThemeAtmosphere from "./ThemeAtmosphere";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { cn } from "@/lib/cn";
 import { formatHMS } from "@/lib/format";
 import { THEMES, type FocusTheme } from "@/lib/wallpapers";
@@ -73,8 +74,21 @@ export default function ImmersiveFocusView({
   onToggleFullscreen,
   theme,
 }: Props) {
-  // Zoom level: 80% to 150%
-  const [zoomPercent, setZoomPercent] = useState<number>(100);
+  // Zoom level: 25% to 200% (persisted)
+  const [zoomPercent, setZoomPercent] = useLocalStorage<number>("aura:zoomPercent", 100);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      const z = p.get("zoom");
+      if (z) {
+        const parsed = Number(z);
+        if (!isNaN(parsed) && parsed >= 25 && parsed <= 200) {
+          setZoomPercent(parsed);
+        }
+      }
+    }
+  }, [setZoomPercent]);
   // Clean mode (hide distractions / only show timer per Image 4)
   const [isCleanMode, setIsCleanMode] = useState<boolean>(false);
   // Minimal mode (clean, chromeless window - just the time, no buttons)
@@ -109,7 +123,7 @@ export default function ImmersiveFocusView({
   const elapsedMinutes = Math.floor((targetMs > 0 ? (percent / 100) * targetMs : displayMs) / 60_000);
 
   function handleZoom(delta: number) {
-    setZoomPercent((prev) => Math.min(150, Math.max(80, prev + delta)));
+    setZoomPercent((prev) => Math.min(200, Math.max(25, prev + delta)));
   }
 
   // Keyboard shortcut Esc to exit Minimal or Clean mode
@@ -135,293 +149,301 @@ export default function ImmersiveFocusView({
       )}
       <ThemeAtmosphere theme={theme} isCleanMode={isCleanMode} />
 
-      {/* Top Bar: Subject Badge in Center & Top-Right Tasks Pill/Card */}
+      {/* Scalable Dashboard Stage: Scales all dashboard elements (Subject, Tasks, Clock, Controls, Progress, Buttons) */}
       <div
-        className={cn(
-          "w-full flex items-center justify-between relative z-20 px-1 sm:px-6 transition-all duration-300",
-          isCleanMode ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100"
-        )}
+        style={{
+          transform: `scale(${zoomPercent / 100})`,
+          transformOrigin: "center center",
+        }}
+        className="w-full flex-1 flex flex-col justify-between items-center transition-transform duration-200 z-10 pointer-events-auto"
       >
-        <div className="w-20 sm:w-28 shrink-0" />
-
-        {/* Center: Subject Pill Tag (e.g. • Editing) */}
-        <div className="flex-1 flex justify-center">
-          <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-zinc-700/60 bg-zinc-950/70 px-3 sm:px-4 py-1 text-[11px] sm:text-xs font-semibold text-zinc-200 backdrop-blur-xl shadow-lg">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{
-                backgroundColor: currentSubject.color || themeConfig.accentColor,
-                boxShadow: `0 0 8px ${currentSubject.color || themeConfig.accentColor}`,
-              }}
-            />
-            <span>{currentSubject.name}</span>
-            {theme === "music" && (
-              <Disc3 size={12} className="text-purple-400 animate-spin" />
-            )}
-          </div>
-        </div>
-
-        {/* Top Right: Tasks Collapsed Pill OR Expanded Card */}
-        <div className="w-20 sm:w-28 shrink-0 flex justify-end items-center">
-          {!tasksCardOpen ? (
-            /* Sleek Collapsed Pill */
-            <button
-              type="button"
-              onClick={() => setTasksCardOpen(true)}
-              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-zinc-800/80 bg-zinc-950/80 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-zinc-300 backdrop-blur-xl shadow-xl hover:bg-zinc-900 hover:text-white transition active:scale-95"
-            >
-              <ListTodo size={13} className="text-zinc-400" />
-              <span>
-                Tasks {completedTasksCount}/{tasks.length}
-              </span>
-            </button>
-          ) : (
-            /* Floating Expanded Tasks Card */
-            <div className="fixed top-4 right-4 sm:right-6 z-40 w-[92vw] max-w-xs sm:w-80 rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl backdrop-blur-2xl text-zinc-200 animate-fade-in">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
-                <span className="text-xs font-bold text-zinc-300">
-                  Tasks {completedTasksCount} of {tasks.length}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setTasksCardOpen(false)}
-                  title="Collapse tasks"
-                  className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
-                >
-                  <Minimize2 size={14} />
-                </button>
-              </div>
-
-              {/* Tasks List */}
-              <div className="max-h-48 overflow-y-auto py-2 space-y-1.5 scrollbar-thin">
-                {tasks.length === 0 ? (
-                  <p className="text-xs text-zinc-500 py-3 text-center">
-                    No tasks attached yet.
-                  </p>
-                ) : (
-                  tasks.map((task, idx) => (
-                    <div
-                      key={task.id}
-                      className={cn(
-                        "group flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-xs transition",
-                        task.done
-                          ? "bg-zinc-900/40 text-zinc-500 line-through"
-                          : idx === 0
-                          ? "bg-white/10 border border-white/20 text-white"
-                          : "hover:bg-zinc-900/60 text-zinc-300"
-                      )}
-                    >
-                      <label className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
-                        <input
-                          type="checkbox"
-                          checked={task.done}
-                          onChange={() => onToggleTask(task.id)}
-                          className="h-3.5 w-3.5 rounded border-zinc-700 bg-zinc-900 accent-[#ff4d6d] cursor-pointer"
-                        />
-                        <span className="truncate">{task.text}</span>
-                      </label>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {idx === 0 && !task.done && (
-                          <span
-                            className="rounded-full px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider"
-                            style={{ backgroundColor: themeConfig.accentColor }}
-                          >
-                            Now
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => onDeleteTask(task.id)}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-400 hover:text-red-400 transition"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Quick Add Task */}
-              <div className="pt-2 border-t border-zinc-800/80 flex gap-2">
-                <input
-                  type="text"
-                  value={quickTaskInput}
-                  onChange={(e) => setQuickTaskInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && quickTaskInput.trim()) {
-                      onAddTask(quickTaskInput.trim());
-                      setQuickTaskInput("");
-                    }
-                  }}
-                  placeholder="+ Add a task…"
-                  className="flex-1 rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ff4d6d]"
-                />
-                {quickTaskInput.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onAddTask(quickTaskInput.trim());
-                      setQuickTaskInput("");
-                    }}
-                    className="rounded-xl px-2.5 py-1.5 text-xs font-bold text-white hover:opacity-90 transition"
-                    style={{ backgroundColor: themeConfig.accentColor }}
-                  >
-                    Add
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Center: Scalable Countdown Clock & Progress Area (pointer-events-none prevents scaling box from blocking clicks) */}
-      <div
-        style={{ transform: `scale(${zoomPercent / 100})` }}
-        className="relative z-10 flex flex-col items-center justify-center my-auto transition-transform duration-200 pointer-events-none"
-      >
-        {/* Huge Digital Clock styled by Theme */}
+        {/* Top Bar: Subject Badge in Center & Top-Right Tasks Pill/Card */}
         <div
           className={cn(
-            "text-5xl xs:text-6xl sm:text-8xl md:text-9xl font-semibold tracking-tight leading-none drop-shadow-2xl select-none text-center pointer-events-auto",
-            themeConfig.fontClass,
-            themeConfig.timerColor
+            "w-full flex items-center justify-between relative z-20 px-1 sm:px-6 transition-all duration-300",
+            isCleanMode ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100"
           )}
         >
-          {theme === "money" && <span className="text-amber-400 font-serif mr-2">$</span>}
-          {theme === "trading" && <span className="text-emerald-400 font-mono mr-1">+</span>}
-          {formatHMS(displayMs)}
-        </div>
+          <div className="w-20 sm:w-28 shrink-0" />
 
-        {/* Subtitle: Started 4:06 PM · Ends 5:19 PM */}
-        <div className="mt-3 text-xs sm:text-sm font-medium text-zinc-300 drop-shadow-md text-center pointer-events-auto">
-          {running ? (
-            <span>
-              Started {startTimeStr} · Ends {endTimeStr}
-            </span>
-          ) : hasProgress ? (
-            <span className="font-semibold" style={{ color: themeConfig.accentColor }}>
-              Paused
-            </span>
-          ) : (
-            <span className="text-zinc-400">Ready to focus</span>
-          )}
-        </div>
-
-        {/* Interactive Controls below Clock (Hidden in Clean Mode, clicks enabled) */}
-        <div
-          className={cn(
-            "pointer-events-auto flex flex-col items-center transition-all duration-300",
-            isCleanMode && "opacity-0 pointer-events-none"
-          )}
-        >
-          {/* Progress Bar with theme accent styling */}
-          {targetMs > 0 && (
-            <div className="w-56 xs:w-64 sm:w-80 md:w-96 mt-4 space-y-1">
-              <div className="h-1.5 w-full rounded-full bg-white/20 overflow-hidden backdrop-blur-sm">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${percent}%`,
-                    backgroundColor: themeConfig.accentColor,
-                    boxShadow: `0 0 12px ${themeConfig.accentColor}`,
-                  }}
-                />
-              </div>
-              <div className="flex justify-between text-[11px] font-mono text-zinc-300 px-0.5">
-                <span>{elapsedMinutes}m in</span>
-                <span>{Math.round(percent)}%</span>
-              </div>
+          {/* Center: Subject Pill Tag (e.g. • Editing) */}
+          <div className="flex-1 flex justify-center">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-zinc-700/60 bg-zinc-950/70 px-3 sm:px-4 py-1 text-[11px] sm:text-xs font-semibold text-zinc-200 backdrop-blur-xl shadow-lg">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{
+                  backgroundColor: currentSubject.color || themeConfig.accentColor,
+                  boxShadow: `0 0 8px ${currentSubject.color || themeConfig.accentColor}`,
+                }}
+              />
+              <span>{currentSubject.name}</span>
+              {theme === "music" && (
+                <Disc3 size={12} className="text-purple-400 animate-spin" />
+              )}
             </div>
-          )}
-
-          {/* "Add time" link */}
-          <div className="mt-3 relative">
-            <button
-              type="button"
-              onClick={() => setShowAddMinutesDropdown(!showAddMinutesDropdown)}
-              className="text-xs font-semibold text-zinc-200 underline underline-offset-4 hover:text-white transition drop-shadow"
-            >
-              Add time
-            </button>
-
-            {showAddMinutesDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-20"
-                  onClick={() => setShowAddMinutesDropdown(false)}
-                />
-                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 rounded-2xl border border-zinc-800 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur-xl flex gap-1.5 z-30">
-                  {[5, 10, 15, 30].map((mins) => (
-                    <button
-                      key={mins}
-                      type="button"
-                      onClick={() => {
-                        onAddTime(mins);
-                        setShowAddMinutesDropdown(false);
-                      }}
-                      className="rounded-xl bg-zinc-900 px-2.5 py-1 text-xs font-bold text-zinc-200 hover:bg-[#ff4d6d] hover:text-white transition"
-                    >
-                      +{mins}m
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
 
-          {/* Round End & Pause / Resume Action Buttons */}
-          <div className="mt-8 flex items-center justify-center gap-6 sm:gap-8">
-            {/* Round Gray End Button */}
-            <div className="flex flex-col items-center gap-1">
+          {/* Top Right: Tasks Collapsed Pill OR Expanded Card */}
+          <div className="w-20 sm:w-28 shrink-0 flex justify-end items-center">
+            {!tasksCardOpen ? (
+              /* Sleek Collapsed Pill */
               <button
                 type="button"
-                onClick={onFinish}
-                aria-label="End session"
-                title="End session"
-                className="grid h-14 w-14 place-items-center rounded-full bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition active:scale-95 border border-zinc-700/60 shadow-lg"
+                onClick={() => setTasksCardOpen(true)}
+                className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-zinc-800/80 bg-zinc-950/80 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-zinc-300 backdrop-blur-xl shadow-xl hover:bg-zinc-900 hover:text-white transition active:scale-95"
               >
-                <X size={20} />
+                <ListTodo size={13} className="text-zinc-400" />
+                <span>
+                  Tasks {completedTasksCount}/{tasks.length}
+                </span>
               </button>
-              <span className="text-[11px] text-zinc-300 font-medium">End</span>
+            ) : (
+              /* Floating Expanded Tasks Card */
+              <div className="fixed top-4 right-4 sm:right-6 z-40 w-[92vw] max-w-xs sm:w-80 rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl backdrop-blur-2xl text-zinc-200 animate-fade-in">
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+                  <span className="text-xs font-bold text-zinc-300">
+                    Tasks {completedTasksCount} of {tasks.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setTasksCardOpen(false)}
+                    title="Collapse tasks"
+                    className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                  >
+                    <Minimize2 size={14} />
+                  </button>
+                </div>
+
+                {/* Tasks List */}
+                <div className="max-h-48 overflow-y-auto py-2 space-y-1.5 scrollbar-thin">
+                  {tasks.length === 0 ? (
+                    <p className="text-xs text-zinc-500 py-3 text-center">
+                      No tasks attached yet.
+                    </p>
+                  ) : (
+                    tasks.map((task, idx) => (
+                      <div
+                        key={task.id}
+                        className={cn(
+                          "group flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-xs transition",
+                          task.done
+                            ? "bg-zinc-900/40 text-zinc-500 line-through"
+                            : idx === 0
+                            ? "bg-white/10 border border-white/20 text-white"
+                            : "hover:bg-zinc-900/60 text-zinc-300"
+                        )}
+                      >
+                        <label className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={task.done}
+                            onChange={() => onToggleTask(task.id)}
+                            className="h-3.5 w-3.5 rounded border-zinc-700 bg-zinc-900 accent-[#ff4d6d] cursor-pointer"
+                          />
+                          <span className="truncate">{task.text}</span>
+                        </label>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {idx === 0 && !task.done && (
+                            <span
+                              className="rounded-full px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider"
+                              style={{ backgroundColor: themeConfig.accentColor }}
+                            >
+                              Now
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onDeleteTask(task.id)}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-400 hover:text-red-400 transition"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Quick Add Task */}
+                <div className="pt-2 border-t border-zinc-800/80 flex gap-2">
+                  <input
+                    type="text"
+                    value={quickTaskInput}
+                    onChange={(e) => setQuickTaskInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && quickTaskInput.trim()) {
+                        onAddTask(quickTaskInput.trim());
+                        setQuickTaskInput("");
+                      }
+                    }}
+                    placeholder="+ Add a task…"
+                    className="flex-1 rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ff4d6d]"
+                  />
+                  {quickTaskInput.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onAddTask(quickTaskInput.trim());
+                        setQuickTaskInput("");
+                      }}
+                      className="rounded-xl px-2.5 py-1.5 text-xs font-bold text-white hover:opacity-90 transition"
+                      style={{ backgroundColor: themeConfig.accentColor }}
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Center: Scalable Countdown Clock & Progress Area (pointer-events-none prevents scaling box from blocking clicks) */}
+        <div
+          className="relative z-10 flex flex-col items-center justify-center my-auto transition-transform duration-200 pointer-events-none"
+        >
+          {/* Huge Digital Clock styled by Theme */}
+          <div
+            className={cn(
+              "text-5xl xs:text-6xl sm:text-8xl md:text-9xl font-semibold tracking-tight leading-none drop-shadow-2xl select-none text-center pointer-events-auto",
+              themeConfig.fontClass,
+              themeConfig.timerColor
+            )}
+          >
+            {theme === "money" && <span className="text-amber-400 font-serif mr-2">$</span>}
+            {theme === "trading" && <span className="text-emerald-400 font-mono mr-1">+</span>}
+            {formatHMS(displayMs)}
+          </div>
+
+          {/* Subtitle: Started 4:06 PM · Ends 5:19 PM */}
+          <div className="mt-3 text-xs sm:text-sm font-medium text-zinc-300 drop-shadow-md text-center pointer-events-auto">
+            {running ? (
+              <span>
+                Started {startTimeStr} · Ends {endTimeStr}
+              </span>
+            ) : hasProgress ? (
+              <span className="font-semibold" style={{ color: themeConfig.accentColor }}>
+                Paused
+              </span>
+            ) : (
+              <span className="text-zinc-400">Ready to focus</span>
+            )}
+          </div>
+
+          {/* Interactive Controls below Clock (Hidden in Clean Mode, clicks enabled) */}
+          <div
+            className={cn(
+              "pointer-events-auto flex flex-col items-center transition-all duration-300",
+              isCleanMode && "opacity-0 pointer-events-none"
+            )}
+          >
+            {/* Progress Bar with theme accent styling */}
+            {targetMs > 0 && (
+              <div className="w-56 xs:w-64 sm:w-80 md:w-96 mt-4 space-y-1">
+                <div className="h-1.5 w-full rounded-full bg-white/20 overflow-hidden backdrop-blur-sm">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${percent}%`,
+                      backgroundColor: themeConfig.accentColor,
+                      boxShadow: `0 0 12px ${themeConfig.accentColor}`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] font-mono text-zinc-300 px-0.5">
+                  <span>{elapsedMinutes}m in</span>
+                  <span>{Math.round(percent)}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* "Add time" link */}
+            <div className="mt-3 relative">
+              <button
+                type="button"
+                onClick={() => setShowAddMinutesDropdown(!showAddMinutesDropdown)}
+                className="text-xs font-semibold text-zinc-200 underline underline-offset-4 hover:text-white transition drop-shadow"
+              >
+                Add time
+              </button>
+
+              {showAddMinutesDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowAddMinutesDropdown(false)}
+                  />
+                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 rounded-2xl border border-zinc-800 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur-xl flex gap-1.5 z-30">
+                    {[5, 10, 15, 30].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => {
+                          onAddTime(mins);
+                          setShowAddMinutesDropdown(false);
+                        }}
+                        className="rounded-xl bg-zinc-900 px-2.5 py-1 text-xs font-bold text-zinc-200 hover:bg-[#ff4d6d] hover:text-white transition"
+                      >
+                        +{mins}m
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Round Pause / Resume Button styled by Theme Accent */}
-            <div className="flex flex-col items-center gap-1">
-              {running ? (
+            {/* Round End & Pause / Resume Action Buttons */}
+            <div className="mt-8 flex items-center justify-center gap-6 sm:gap-8">
+              {/* Round Gray End Button */}
+              <div className="flex flex-col items-center gap-1">
                 <button
                   type="button"
-                  onClick={onPause}
-                  aria-label="Pause session"
-                  title="Pause session"
-                  className="grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-90"
-                  style={{
-                    backgroundColor: themeConfig.accentColor,
-                    boxShadow: `0 8px 24px ${themeConfig.accentColor}55`,
-                  }}
+                  onClick={onFinish}
+                  aria-label="End session"
+                  title="End session"
+                  className="grid h-14 w-14 place-items-center rounded-full bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition active:scale-95 border border-zinc-700/60 shadow-lg"
                 >
-                  <Pause size={24} fill="currentColor" />
+                  <X size={20} />
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onStart}
-                  aria-label="Resume session"
-                  title="Resume session"
-                  className="grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-90"
-                  style={{
-                    backgroundColor: themeConfig.accentColor,
-                    boxShadow: `0 8px 24px ${themeConfig.accentColor}55`,
-                  }}
-                >
-                  <Play size={24} fill="currentColor" className="ml-1" />
-                </button>
-              )}
-              <span className="text-[11px] text-zinc-300 font-medium">
-                {running ? "Pause" : "Resume"}
-              </span>
+                <span className="text-[11px] text-zinc-300 font-medium">End</span>
+              </div>
+
+              {/* Round Pause / Resume Button styled by Theme Accent */}
+              <div className="flex flex-col items-center gap-1">
+                {running ? (
+                  <button
+                    type="button"
+                    onClick={onPause}
+                    aria-label="Pause session"
+                    title="Pause session"
+                    className="grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-90"
+                    style={{
+                      backgroundColor: themeConfig.accentColor,
+                      boxShadow: `0 8px 24px ${themeConfig.accentColor}55`,
+                    }}
+                  >
+                    <Pause size={24} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    aria-label="Resume session"
+                    title="Resume session"
+                    className="grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-90"
+                    style={{
+                      backgroundColor: themeConfig.accentColor,
+                      boxShadow: `0 8px 24px ${themeConfig.accentColor}55`,
+                    }}
+                  >
+                    <Play size={24} fill="currentColor" className="ml-1" />
+                  </button>
+                )}
+                <span className="text-[11px] text-zinc-300 font-medium">
+                  {running ? "Pause" : "Resume"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -434,13 +456,14 @@ export default function ImmersiveFocusView({
           isCleanMode && "opacity-0 pointer-events-none translate-y-6"
         )}
       >
-        {/* Docked Music Player Bar (With explicit Audio only close button) */}
+        {/* Docked or Movable Music Player Bar (With explicit Audio only close button) */}
         <MusicPlayerBar
           isPlaylistOpen={isPlaylistOpen}
           onTogglePlaylist={() => setIsPlaylistOpen(!isPlaylistOpen)}
           isVideoVisible={isVideoVisible}
           onCloseVideo={() => setIsVideoVisible(false)}
           accentColor={themeConfig.accentColor}
+          isCleanMode={isCleanMode}
         />
 
         {/* Floating Bottom Dock Toolbar */}
@@ -485,18 +508,22 @@ export default function ImmersiveFocusView({
             <button
               type="button"
               onClick={() => handleZoom(-10)}
-              title="Zoom out"
+              title="Zoom out (zoom down to 25%)"
               className="p-1 text-zinc-400 hover:text-white transition active:scale-95"
             >
               <Minus size={13} />
             </button>
-            <span className="text-[11px] font-mono w-9 text-center text-zinc-400">
+            <span
+              onClick={() => setZoomPercent(100)}
+              title="Click to reset zoom to 100%"
+              className="text-[11px] font-mono w-10 text-center text-zinc-400 hover:text-white hover:underline cursor-pointer transition select-none"
+            >
               {zoomPercent}%
             </span>
             <button
               type="button"
               onClick={() => handleZoom(10)}
-              title="Zoom in"
+              title="Zoom in (up to 200%)"
               className="p-1 text-zinc-400 hover:text-white transition active:scale-95"
             >
               <Plus size={13} />
