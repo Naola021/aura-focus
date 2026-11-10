@@ -46,6 +46,7 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
   const onEndedRef = useRef(onEnded);
   const loadedKey = useRef<string | null>(null);
   const errorStreak = useRef(0);
+  const pendingPlayRef = useRef(false);
 
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -84,20 +85,19 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
         origin: typeof window !== "undefined" ? window.location.origin : "",
       };
 
-      const isEmbeddablePlaylist = initial.kind === "playlist";
-      if (isEmbeddablePlaylist) {
-        playerVars.listType = "playlist";
+      const isPlaylist = initial.kind === "playlist";
+      if (isPlaylist) {
         playerVars.list = initial.ref;
-        if (initial.videoId) {
-          playerVars.videoId = initial.videoId;
+        if (initial.ref.startsWith("PL")) {
+          playerVars.listType = "playlist";
         }
       }
 
-      const videoId = isEmbeddablePlaylist
-        ? undefined
-        : initial.kind === "video"
-        ? initial.ref
-        : initial.videoId || initial.ref;
+      // Always pass a valid videoId so YouTube initializes the player iframe immediately!
+      const videoId =
+        initial.kind === "video"
+          ? initial.ref
+          : initial.videoId || (initial.ref.startsWith("RD") ? initial.ref.slice(2) : undefined);
 
       playerRef.current = new window.YT.Player(el, {
         width: "100%",
@@ -107,23 +107,33 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
         events: {
           onReady: (e) => {
             e.target.setVolume(50);
-            if (isEmbeddablePlaylist) {
+            if (isPlaylist) {
               try {
                 e.target.setLoop(true);
               } catch {}
             }
             setReady(true);
+            if (pendingPlayRef.current) {
+              pendingPlayRef.current = false;
+              e.target.playVideo();
+              setPlaying(true);
+            }
           },
           onStateChange: (e) => {
             const S = window.YT!.PlayerState;
-            setPlaying(e.data === S.PLAYING);
             if (e.data === S.PLAYING) {
+              setPlaying(true);
               errorStreak.current = 0;
               setError(null);
-            }
-            if (e.data === S.ENDED) {
+            } else if (e.data === S.PAUSED) {
+              setPlaying(false);
+            } else if (e.data === S.BUFFERING) {
+              setPlaying(true);
+            } else if (e.data === S.ENDED) {
+              setPlaying(false);
               onEndedRef.current?.();
             }
+
             if (e.data === S.PLAYING || e.data === S.PAUSED || e.data === S.CUED) {
               const data = e.target.getVideoData?.();
               if (data?.title) setTitle(data.title);
@@ -173,9 +183,13 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
     const p = playerRef.current;
     if (!p) return;
 
-    const isEmbeddablePlaylist = source.kind === "playlist";
-    if (isEmbeddablePlaylist) {
-      p.loadPlaylist({ list: source.ref, listType: "playlist", index: 0 });
+    const isPlaylist = source.kind === "playlist";
+    if (isPlaylist) {
+      if (source.ref.startsWith("PL")) {
+        p.loadPlaylist({ list: source.ref, listType: "playlist", index: 0 });
+      } else {
+        p.loadPlaylist({ list: source.ref, index: 0 });
+      }
       try {
         p.setLoop(true);
       } catch {}
@@ -187,10 +201,14 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
 
   const toggle = useCallback(() => {
     const p = playerRef.current;
-    if (!p) return;
+    if (!p) {
+      pendingPlayRef.current = !pendingPlayRef.current;
+      setPlaying(pendingPlayRef.current);
+      return;
+    }
     try {
       const state = typeof p.getPlayerState === "function" ? p.getPlayerState() : -1;
-      if (state === 1) {
+      if (state === 1 || state === 3 || playing) {
         p.pauseVideo();
         setPlaying(false);
       } else {

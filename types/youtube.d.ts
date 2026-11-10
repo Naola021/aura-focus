@@ -3,7 +3,7 @@ interface YTPlayer {
   pauseVideo(): void;
   setVolume(v: number): void;
   loadVideoById(id: string): void;
-  loadPlaylist(opts: { list: string; listType: "playlist" | string; index?: number }): void;
+  loadPlaylist(opts: { list: string; listType?: "playlist" | string; index?: number }): void;
   nextVideo(): void;
   previousVideo(): void;
   playVideoAt(index: number): void;
