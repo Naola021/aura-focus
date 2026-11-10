@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/cn";
 import type { FocusTheme } from "@/lib/wallpapers";
 
@@ -39,20 +40,6 @@ export default function ThemeAtmosphere({ theme, isCleanMode = false }: Props) {
           <div className="absolute top-[38%] left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#ff2a55]/65 to-transparent blur-[0.5px] animate-pulse pointer-events-none" />
           <div className="absolute top-[38%] left-0 right-0 h-[10px] bg-gradient-to-r from-transparent via-[#ff2a55]/20 to-transparent blur-[6px] pointer-events-none" />
 
-          {/* Top HUD Telemetry Banner */}
-          {!isCleanMode && (
-            <div className="absolute top-14 sm:top-16 left-0 right-0 flex justify-between px-4 sm:px-12 text-[10px] sm:text-xs font-mono text-red-400/90 tracking-widest pointer-events-none">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
-                MARK VII // HELMET HUD ENGAGED
-              </span>
-              <span className="hidden sm:inline text-rose-300 font-bold">
-                J.A.R.V.I.S: TARGET ACQUIRED
-              </span>
-              <span className="text-red-400 font-semibold">POWER: 100%</span>
-            </div>
-          )}
-
           {/* Left HUD Telemetry: Diagnostic Suit Wireframe & Targeting Arc */}
           {!isCleanMode && (
             <div className="hidden lg:flex absolute left-8 top-1/2 -translate-y-1/2 flex-col items-start gap-4 text-red-500/90 font-mono select-none pointer-events-none animate-fade-in">
@@ -64,6 +51,22 @@ export default function ThemeAtmosphere({ theme, isCleanMode = false }: Props) {
                   <span className="block text-red-300 font-extrabold">DIAGNOSTIC</span>
                   <span className="block text-[8px] text-red-500/80">SUIT // MARK VII</span>
                   <span className="block text-[11px] font-black text-rose-400 mt-1">ARMOR 88%</span>
+                </div>
+              </div>
+
+              {/* Holographic Mark VII Armor Suit Wireframe */}
+              <div className="relative w-44 h-48 rounded-xl overflow-hidden border border-red-500/30 bg-black/60 backdrop-blur-sm p-1.5 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.25)]">
+                <Image
+                  src="/themes/stark-suit-wireframe.jpg"
+                  alt="Mark VII Wireframe"
+                  width={176}
+                  height={192}
+                  unoptimized
+                  className="w-full h-full object-contain mix-blend-screen opacity-95 filter drop-shadow-[0_0_12px_rgba(255,42,85,0.7)]"
+                />
+                <div className="absolute bottom-1.5 left-2 right-2 text-[8px] font-mono text-red-400/80 flex justify-between">
+                  <span>MK-VII</span>
+                  <span>ONLINE</span>
                 </div>
               </div>
 
@@ -87,26 +90,34 @@ export default function ThemeAtmosphere({ theme, isCleanMode = false }: Props) {
           {!isCleanMode && (
             <div className="hidden lg:flex absolute right-8 top-1/2 -translate-y-1/2 flex-col items-end gap-4 text-red-500/90 font-mono select-none pointer-events-none animate-fade-in">
               {/* Holographic Pepper Potts / Jarvis Comms Card */}
-              <div className="w-56 rounded-2xl border border-red-500/60 bg-red-950/50 backdrop-blur-md p-3.5 shadow-[0_0_25px_rgba(239,68,68,0.35)] space-y-2.5">
+              <div className="w-60 rounded-2xl border border-red-500/60 bg-black/65 backdrop-blur-xl p-3.5 shadow-[0_0_30px_rgba(239,68,68,0.35)] space-y-2.5">
                 <div className="flex items-center justify-between text-[10px] font-bold text-red-300 tracking-wider pb-1.5 border-b border-red-500/40">
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
                     CALLING.
                   </span>
-                  <span className="text-[9px] text-red-400">J.A.R.V.I.S</span>
+                  <span className="text-[9px] text-red-400 font-mono">J.A.R.V.I.S.5</span>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {/* Mini Hologram Avatar */}
-                  <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-red-400/50 bg-black/70 shrink-0 grid place-items-center shadow-inner">
-                    <span className="text-2xl">👩‍💼</span>
-                    <div className="absolute inset-0 bg-red-500/15 mix-blend-color animate-pulse" />
+                  {/* Photo Hologram Avatar */}
+                  <div className="relative h-14 w-14 rounded-xl overflow-hidden border border-red-400/60 bg-black shrink-0 shadow-lg">
+                    <Image
+                      src="/themes/pepper-potts-avatar.jpg"
+                      alt="Pepper Potts"
+                      width={56}
+                      height={56}
+                      unoptimized
+                      className="w-full h-full object-cover filter contrast-110"
+                    />
+                    <div className="absolute inset-0 bg-red-500/20 mix-blend-color pointer-events-none" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_50%,rgba(255,42,85,0.4)_100%)] pointer-events-none" />
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-xs font-black tracking-wider text-white truncate">PEPPER POTTS</div>
                     <div className="text-[9px] text-red-400/90 font-semibold tracking-wider">STARK INDUSTRIES</div>
-                    <div className="text-[8px] text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <div className="text-[8px] text-emerald-400 flex items-center gap-1 mt-0.5 font-medium">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       SECURE AUDIO LINK
                     </div>
@@ -114,11 +125,11 @@ export default function ThemeAtmosphere({ theme, isCleanMode = false }: Props) {
                 </div>
 
                 {/* Audio frequency wave bars */}
-                <div className="flex items-end gap-1 h-4 pt-1 justify-center">
-                  {[6, 12, 16, 9, 14, 8, 15, 11, 7, 13, 10, 5, 12, 8].map((h, i) => (
+                <div className="flex items-end gap-1 h-5 pt-1 justify-center">
+                  {[6, 12, 18, 9, 14, 8, 16, 11, 7, 15, 10, 5, 13, 8].map((h, i) => (
                     <span
                       key={i}
-                      className="w-1 bg-red-400 rounded-full animate-pulse"
+                      className="w-1 bg-gradient-to-t from-red-600 to-rose-400 rounded-full animate-pulse shadow-[0_0_6px_#ff2a55]"
                       style={{
                         height: `${h}px`,
                         animationDelay: `${i * 70}ms`,

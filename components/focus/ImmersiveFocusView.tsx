@@ -164,10 +164,20 @@ export default function ImmersiveFocusView({
             isCleanMode ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100"
           )}
         >
-          <div className="w-20 sm:w-28 shrink-0" />
+          {/* Top Left: Stark Theme HUD telemetry or spacer */}
+          <div className="w-auto sm:w-56 shrink-0 flex items-center">
+            {theme === "stark" ? (
+              <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-mono text-red-500/90 tracking-widest uppercase">
+                <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                <span className="hidden xs:inline">HELMET HUD ENGAGED</span>
+              </span>
+            ) : (
+              <div className="w-20 sm:w-28 shrink-0" />
+            )}
+          </div>
 
-          {/* Center: Subject Pill Tag (e.g. • Editing) */}
-          <div className="flex-1 flex justify-center">
+          {/* Center: Subject Pill Tag (e.g. • Editing) + Stark JARVIS Subtitle */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-1">
             <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-zinc-700/60 bg-zinc-950/70 px-3 sm:px-4 py-1 text-[11px] sm:text-xs font-semibold text-zinc-200 backdrop-blur-xl shadow-lg">
               <span
                 className="h-2 w-2 rounded-full"
@@ -181,10 +191,20 @@ export default function ImmersiveFocusView({
                 <Disc3 size={12} className="text-purple-400 animate-spin" />
               )}
             </div>
+            {theme === "stark" && (
+              <span className="text-[10px] font-mono font-bold text-red-400/90 tracking-widest hidden sm:inline-block drop-shadow-[0_0_8px_rgba(255,42,85,0.7)]">
+                J.A.R.V.I.S: TARGET ACQUIRED
+              </span>
+            )}
           </div>
 
-          {/* Top Right: Tasks Collapsed Pill OR Expanded Card */}
-          <div className="w-20 sm:w-28 shrink-0 flex justify-end items-center">
+          {/* Top Right: Tasks Collapsed Pill OR Expanded Card + Stark POWER: 100% */}
+          <div className="w-auto sm:w-56 shrink-0 flex justify-end items-center gap-3">
+            {theme === "stark" && (
+              <span className="text-[10px] sm:text-xs font-mono text-red-400 font-semibold tracking-wider hidden sm:inline-block">
+                POWER: 100%
+              </span>
+            )}
             {!tasksCardOpen ? (
               /* Sleek Collapsed Pill */
               <button
@@ -301,12 +321,29 @@ export default function ImmersiveFocusView({
 
         {/* Center: Scalable Countdown Clock & Progress Area (pointer-events-none prevents scaling box from blocking clicks) */}
         <div
-          className="relative z-10 flex flex-col items-center justify-center my-auto transition-transform duration-200 pointer-events-none"
+          className="relative z-10 flex flex-col items-center justify-center my-auto transition-transform duration-200 pointer-events-none w-full"
         >
+          {/* Stark Theme Horizontal Crosshair Laser Reticle Line */}
+          {theme === "stark" && (
+            <div className="absolute top-[38%] left-0 right-0 -translate-y-1/2 flex items-center justify-between pointer-events-none z-0 px-2 sm:px-8">
+              <div className="flex-1 flex items-center">
+                <span className="text-red-500/60 text-xs font-mono select-none">├──</span>
+                <div className="flex-1 h-[1.5px] bg-gradient-to-r from-transparent via-[#ff2e56]/90 to-[#ff2e56]/40 shadow-[0_0_10px_#ff2e56]" />
+                <span className="text-red-500/70 text-xs font-mono select-none mx-2">[</span>
+              </div>
+              <div className="w-[280px] xs:w-[340px] sm:w-[500px] md:w-[700px] shrink-0" />
+              <div className="flex-1 flex items-center">
+                <span className="text-red-500/70 text-xs font-mono select-none mx-2">]</span>
+                <div className="flex-1 h-[1.5px] bg-gradient-to-l from-transparent via-[#ff2e56]/90 to-[#ff2e56]/40 shadow-[0_0_10px_#ff2e56]" />
+                <span className="text-red-500/60 text-xs font-mono select-none">──┤</span>
+              </div>
+            </div>
+          )}
+
           {/* Huge Digital Clock styled by Theme */}
           <div
             className={cn(
-              "text-5xl xs:text-6xl sm:text-8xl md:text-9xl font-semibold tracking-tight leading-none drop-shadow-2xl select-none text-center pointer-events-auto",
+              "text-5xl xs:text-6xl sm:text-8xl md:text-9xl font-semibold tracking-tight leading-none drop-shadow-2xl select-none text-center pointer-events-auto relative z-10",
               themeConfig.fontClass,
               themeConfig.timerColor
             )}
@@ -327,7 +364,11 @@ export default function ImmersiveFocusView({
                 Paused
               </span>
             ) : (
-              <span className="text-zinc-400">Ready to focus</span>
+              <span className={cn(
+                theme === "stark" ? "text-red-300/90 font-mono tracking-wider drop-shadow-[0_0_8px_rgba(255,42,85,0.6)]" : "text-zinc-400"
+              )}>
+                Ready to focus
+              </span>
             )}
           </div>
 
@@ -363,7 +404,12 @@ export default function ImmersiveFocusView({
               <button
                 type="button"
                 onClick={() => setShowAddMinutesDropdown(!showAddMinutesDropdown)}
-                className="text-xs font-semibold text-zinc-200 underline underline-offset-4 hover:text-white transition drop-shadow"
+                className={cn(
+                  "text-xs font-semibold underline underline-offset-4 transition drop-shadow",
+                  theme === "stark"
+                    ? "text-red-300 hover:text-white decoration-red-500/60 font-mono tracking-wider"
+                    : "text-zinc-200 hover:text-white"
+                )}
               >
                 Add time
               </button>
@@ -394,19 +440,37 @@ export default function ImmersiveFocusView({
             </div>
 
             {/* Round End & Pause / Resume Action Buttons */}
-            <div className="mt-8 flex items-center justify-center gap-6 sm:gap-8">
-              {/* Round Gray End Button */}
+            <div className="mt-8 flex items-center justify-center gap-6 sm:gap-8 relative">
+              {/* Flanking HUD bracket left for Stark theme */}
+              {theme === "stark" && (
+                <div className="text-[10px] font-mono text-red-500/70 tracking-widest select-none pointer-events-none hidden xs:flex items-center gap-1.5 pr-2">
+                  <span className="text-red-500/40">|</span>
+                  <span>DLCT</span>
+                </div>
+              )}
+
+              {/* Round End Button */}
               <div className="flex flex-col items-center gap-1">
                 <button
                   type="button"
                   onClick={onFinish}
                   aria-label="End session"
                   title="End session"
-                  className="grid h-14 w-14 place-items-center rounded-full bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition active:scale-95 border border-zinc-700/60 shadow-lg"
+                  className={cn(
+                    "grid h-14 w-14 place-items-center rounded-full transition active:scale-95 shadow-lg",
+                    theme === "stark"
+                      ? "bg-zinc-900/85 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-red-950/60 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.8)]"
+                      : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700/60"
+                  )}
                 >
                   <X size={20} />
                 </button>
-                <span className="text-[11px] text-zinc-300 font-medium">End</span>
+                <span className={cn(
+                  "text-[11px] font-medium",
+                  theme === "stark" ? "text-zinc-400 font-mono tracking-wider" : "text-zinc-300"
+                )}>
+                  End
+                </span>
               </div>
 
               {/* Round Pause / Resume Button styled by Theme Accent */}
@@ -417,11 +481,14 @@ export default function ImmersiveFocusView({
                     onClick={onPause}
                     aria-label="Pause session"
                     title="Pause session"
-                    className="grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-90"
-                    style={{
+                    className={cn(
+                      "grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-95 hover:scale-105",
+                      theme === "stark" && "shadow-[0_0_35px_rgba(255,46,86,0.85)] bg-gradient-to-br from-[#ff3b5c] to-[#e11d48]"
+                    )}
+                    style={theme !== "stark" ? {
                       backgroundColor: themeConfig.accentColor,
                       boxShadow: `0 8px 24px ${themeConfig.accentColor}55`,
-                    }}
+                    } : undefined}
                   >
                     <Pause size={24} fill="currentColor" />
                   </button>
@@ -431,19 +498,33 @@ export default function ImmersiveFocusView({
                     onClick={onStart}
                     aria-label="Resume session"
                     title="Resume session"
-                    className="grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-90"
-                    style={{
+                    className={cn(
+                      "grid h-16 w-16 place-items-center rounded-full text-white transition active:scale-95 shadow-xl hover:opacity-95 hover:scale-105",
+                      theme === "stark" && "shadow-[0_0_35px_rgba(255,46,86,0.85)] bg-gradient-to-br from-[#ff3b5c] to-[#e11d48]"
+                    )}
+                    style={theme !== "stark" ? {
                       backgroundColor: themeConfig.accentColor,
                       boxShadow: `0 8px 24px ${themeConfig.accentColor}55`,
-                    }}
+                    } : undefined}
                   >
                     <Play size={24} fill="currentColor" className="ml-1" />
                   </button>
                 )}
-                <span className="text-[11px] text-zinc-300 font-medium">
+                <span className={cn(
+                  "text-[11px] font-medium",
+                  theme === "stark" ? "text-zinc-300 font-mono tracking-wider" : "text-zinc-300"
+                )}>
                   {running ? "Pause" : "Resume"}
                 </span>
               </div>
+
+              {/* Flanking HUD bracket right for Stark theme */}
+              {theme === "stark" && (
+                <div className="text-[10px] font-mono text-red-500/70 tracking-widest select-none pointer-events-none hidden xs:flex items-center gap-1.5 pl-2">
+                  <span>ADVD</span>
+                  <span className="text-red-500/40">|</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
