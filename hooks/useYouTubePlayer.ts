@@ -51,6 +51,7 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
   const [playing, setPlaying] = useState(false);
   const [volume, setVolumeState] = useState(50);
   const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,10 +84,13 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
         origin: typeof window !== "undefined" ? window.location.origin : "",
       };
 
-      const isEmbeddablePlaylist = initial.kind === "playlist" && initial.ref.startsWith("PL");
+      const isEmbeddablePlaylist = initial.kind === "playlist";
       if (isEmbeddablePlaylist) {
         playerVars.listType = "playlist";
         playerVars.list = initial.ref;
+        if (initial.videoId) {
+          playerVars.videoId = initial.videoId;
+        }
       }
 
       const videoId = isEmbeddablePlaylist
@@ -103,7 +107,11 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
         events: {
           onReady: (e) => {
             e.target.setVolume(50);
-            if (isEmbeddablePlaylist) e.target.setLoop(true);
+            if (isEmbeddablePlaylist) {
+              try {
+                e.target.setLoop(true);
+              } catch {}
+            }
             setReady(true);
           },
           onStateChange: (e) => {
@@ -117,13 +125,23 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
               onEndedRef.current?.();
             }
             if (e.data === S.PLAYING || e.data === S.PAUSED || e.data === S.CUED) {
-              setTitle(e.target.getVideoData()?.title ?? "");
+              const data = e.target.getVideoData?.();
+              if (data?.title) setTitle(data.title);
+              if (data?.author) setArtist(data.author);
             }
           },
           onError: (e) => {
+            console.warn("YouTube player error code:", e.data);
+            // If in a mix/playlist and a track fails, try advancing to next song in the mix
+            try {
+              const list = playerRef.current?.getPlaylist?.();
+              if (Array.isArray(list) && list.length > 1) {
+                playerRef.current?.nextVideo?.();
+                return;
+              }
+            } catch {}
             setPlaying(false);
             errorStreak.current += 1;
-            console.warn("YouTube player error code:", e.data);
             if (errorStreak.current < 3) {
               onEndedRef.current?.();
             } else {
@@ -155,10 +173,12 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
     const p = playerRef.current;
     if (!p) return;
 
-    const isEmbeddablePlaylist = source.kind === "playlist" && source.ref.startsWith("PL");
+    const isEmbeddablePlaylist = source.kind === "playlist";
     if (isEmbeddablePlaylist) {
       p.loadPlaylist({ list: source.ref, listType: "playlist", index: 0 });
-      p.setLoop(true);
+      try {
+        p.setLoop(true);
+      } catch {}
     } else {
       const vid = source.kind === "video" ? source.ref : source.videoId || source.ref;
       p.loadVideoById(vid);
@@ -191,8 +211,58 @@ export function useYouTubePlayer(source: YTRef | null, onEnded?: () => void) {
     playerRef.current?.setVolume(v);
   }, []);
 
-  const next = useCallback(() => playerRef.current?.nextVideo(), []);
-  const previous = useCallback(() => playerRef.current?.previousVideo(), []);
+  const next = useCallback(() => {
+    const p = playerRef.current;
+    if (!p) return;
+    try {
+      if (typeof p.nextVideo === "function") {
+        p.nextVideo();
+      }
+      if (typeof p.playVideo === "function") {
+        p.playVideo();
+      }
+    } catch (err) {
+      console.warn("nextVideo error:", err);
+    }
+  }, []);
 
-  return { mountRef, ready, playing, volume, title, error, toggle, setVolume, next, previous };
+  const previous = useCallback(() => {
+    const p = playerRef.current;
+    if (!p) return;
+    try {
+      if (typeof p.previousVideo === "function") {
+        p.previousVideo();
+      }
+      if (typeof p.playVideo === "function") {
+        p.playVideo();
+      }
+    } catch (err) {
+      console.warn("previousVideo error:", err);
+    }
+  }, []);
+
+  const isPlaylistActive = useCallback((): boolean => {
+    if (sourceRef.current?.kind === "playlist") return true;
+    try {
+      const list = playerRef.current?.getPlaylist?.();
+      return Array.isArray(list) && list.length > 1;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  return {
+    mountRef,
+    ready,
+    playing,
+    volume,
+    title,
+    artist,
+    error,
+    toggle,
+    setVolume,
+    next,
+    previous,
+    isPlaylistActive,
+  };
 }

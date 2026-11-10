@@ -162,8 +162,9 @@ export default function MusicPlayerBar({
         const vid = s.videoId || s.ref.replace(/^RD/, "");
         return {
           ...s,
-          kind: "video" as const,
-          ref: vid,
+          kind: "playlist" as const,
+          ref: s.ref,
+          videoId: vid,
         };
       }
       return s;
@@ -186,14 +187,14 @@ export default function MusicPlayerBar({
       ? allSources[0]
       : null;
 
-  const handleNextTrack = useCallback(() => {
+  const handleNextTrackCard = useCallback(() => {
     if (allSources.length > 1) {
       const nextIdx = (currentIndex + 1) % allSources.length;
       setSelectedId(allSources[nextIdx].id);
     }
   }, [allSources, currentIndex, setSelectedId]);
 
-  const handlePrevTrack = useCallback(() => {
+  const handlePrevTrackCard = useCallback(() => {
     if (allSources.length > 1) {
       const prevIdx = (currentIndex - 1 + allSources.length) % allSources.length;
       setSelectedId(allSources[prevIdx].id);
@@ -214,9 +215,35 @@ export default function MusicPlayerBar({
     playing,
     volume,
     title,
+    artist,
     toggle,
     setVolume,
-  } = useYouTubePlayer(ytSource, handleNextTrack);
+    next,
+    previous,
+    isPlaylistActive,
+  } = useYouTubePlayer(ytSource, handleNextTrackCard);
+
+  // When clicking Next on the player:
+  // If playing a mix or playlist, change to the next song in the mix!
+  // Otherwise, advance to the next track in the saved list.
+  const handleNextClick = useCallback(() => {
+    if (isPlaylistActive() || current?.kind === "playlist") {
+      next();
+      return;
+    }
+    handleNextTrackCard();
+  }, [isPlaylistActive, current, next, handleNextTrackCard]);
+
+  // When clicking Prev on the player:
+  // If playing a mix or playlist, go to previous song in the mix!
+  // Otherwise, go to previous track in the saved list.
+  const handlePrevClick = useCallback(() => {
+    if (isPlaylistActive() || current?.kind === "playlist") {
+      previous();
+      return;
+    }
+    handlePrevTrackCard();
+  }, [isPlaylistActive, current, previous, handlePrevTrackCard]);
 
   useHotkey("m", () => {
     if (allSources.length > 0) {
@@ -631,7 +658,7 @@ export default function MusicPlayerBar({
           </div>
           <div className="text-[10px] text-zinc-400 truncate">
             {current ? (
-              <span className="truncate">{current.artist || "YouTube"}</span>
+              <span className="truncate">{artist || current.artist || "YouTube"}</span>
             ) : (
               "+ Paste a YouTube link"
             )}
@@ -643,9 +670,15 @@ export default function MusicPlayerBar({
           {/* Previous Track */}
           <button
             type="button"
-            onClick={handlePrevTrack}
-            disabled={allSources.length <= 1}
-            title={allSources.length > 1 ? "Previous track in queue" : "No other tracks"}
+            onClick={handlePrevClick}
+            disabled={!current && allSources.length === 0}
+            title={
+              current?.kind === "playlist"
+                ? "Previous song in mix / playlist"
+                : allSources.length > 1
+                ? "Previous track in queue"
+                : "Restart track"
+            }
             className="p-1 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <SkipBack size={14} fill="currentColor" />
@@ -677,9 +710,15 @@ export default function MusicPlayerBar({
           {/* Next Track */}
           <button
             type="button"
-            onClick={handleNextTrack}
-            disabled={allSources.length <= 1}
-            title={allSources.length > 1 ? "Next track in queue" : "No other tracks"}
+            onClick={handleNextClick}
+            disabled={!current && allSources.length === 0}
+            title={
+              current?.kind === "playlist"
+                ? "Next song in mix / playlist"
+                : allSources.length > 1
+                ? "Next track in queue"
+                : "No other tracks"
+            }
             className="p-1 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <SkipForward size={14} fill="currentColor" />

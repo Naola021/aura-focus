@@ -4,8 +4,8 @@ export type YTRef = {
   videoId?: string;
 };
 
-// Standard embeddable playlists start with PL, UU, or OL
-const EMBEDDABLE_PLAYLIST_PREFIX = /^(PL|UU|OL)[\w-]{2,}$/i;
+// Standard embeddable playlists and mixes (PL, RD mix, UU uploads, OL albums, LL, FL, TL)
+const EMBEDDABLE_PLAYLIST_PREFIX = /^(PL|RD|UU|OL|LL|FL|TL)[\w-]{2,}$/i;
 
 /** Accepts a video ID, playlist ID, or any youtube.com / youtu.be link. */
 export function parseYouTube(input: string): YTRef | null {
@@ -79,8 +79,8 @@ export function makeMixRef(videoId: string): YTRef {
 
 /** Full metadata lookup using internal API route with fallback. Never throws. */
 export async function fetchYouTubeMeta(r: YTRef): Promise<YouTubeMeta> {
-  const targetId = r.kind === "video" ? r.ref : r.videoId || r.ref;
-  const isPlaylist = r.kind === "playlist" && r.ref.startsWith("PL");
+  const targetId = r.kind === "video" ? r.ref : r.videoId || (r.ref.startsWith("RD") ? r.ref.slice(2) : r.ref);
+  const isPlaylist = r.kind === "playlist" && !r.ref.startsWith("RD");
   const targetUrl = isPlaylist
     ? `https://www.youtube.com/playlist?list=${r.ref}`
     : `https://www.youtube.com/watch?v=${targetId}`;

@@ -14,8 +14,9 @@ export type Source = {
 export const DEFAULT_SOURCES: Source[] = [
   {
     id: "bruno-mars-mix",
-    kind: "video",
-    ref: "LjhCEhWiKXk",
+    kind: "playlist",
+    ref: "RDLjhCEhWiKXk",
+    videoId: "LjhCEhWiKXk",
     title: "My- Mix · Bruno Mars",
     artist: "Bruno Mars",
     cover: "https://i.ytimg.com/vi/LjhCEhWiKXk/hqdefault.jpg",
