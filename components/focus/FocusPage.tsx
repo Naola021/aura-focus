@@ -61,6 +61,11 @@ export default function FocusPage() {
       if (t) {
         setFocusTheme(t as FocusTheme);
       }
+      const tabParam = p.get("tab") as NavTab | null;
+      if (tabParam === "stats" || tabParam === "profile") {
+        setActiveTab(tabParam);
+        setIsSidebarOpen(true);
+      }
     }
   }, [setFocusTheme]);
 
@@ -133,7 +138,7 @@ export default function FocusPage() {
       : Math.max(1000, (durationHours * 3600 + durationMinutes * 60) * 1000);
 
   function logSession(durationMs: number) {
-    if (durationMs < 30_000) return; // ignore short clicks under 30s
+    if (durationMs < 5_000) return; // ignore instant clicks under 5s
     const completedTasksCount = sessionTasks.filter((t) => t.done).length;
 
     history.add({
@@ -148,6 +153,7 @@ export default function FocusPage() {
       endedAt: Date.now(),
       tasksCompleted: completedTasksCount,
       tasksTotal: sessionTasks.length,
+      tasks: sessionTasks.map((t) => ({ ...t })),
     });
   }
 

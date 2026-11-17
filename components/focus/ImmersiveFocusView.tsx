@@ -149,21 +149,13 @@ export default function ImmersiveFocusView({
       )}
       <ThemeAtmosphere theme={theme} isCleanMode={isCleanMode} />
 
-      {/* Scalable Dashboard Stage: Scales all dashboard elements (Subject, Tasks, Clock, Controls, Progress, Buttons) */}
-      <div
-        style={{
-          transform: `scale(${zoomPercent / 100})`,
-          transformOrigin: "center center",
-        }}
-        className="w-full flex-1 flex flex-col justify-between items-center transition-transform duration-200 z-10 pointer-events-auto"
+      {/* Top Bar Header: Anchored at the top edge of the dashboard in its place */}
+      <header
+        className={cn(
+          "w-full flex items-center justify-between relative z-20 px-1 sm:px-6 transition-all duration-300 shrink-0",
+          isCleanMode ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100"
+        )}
       >
-        {/* Top Bar: Subject Badge in Center & Top-Right Tasks Pill/Card */}
-        <div
-          className={cn(
-            "w-full flex items-center justify-between relative z-20 px-1 sm:px-6 transition-all duration-300",
-            isCleanMode ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100"
-          )}
-        >
           {/* Top Left: Stark Theme HUD telemetry or spacer */}
           <div className="w-auto sm:w-56 shrink-0 flex items-center">
             {theme === "stark" ? (
@@ -191,11 +183,7 @@ export default function ImmersiveFocusView({
                 <Disc3 size={12} className="text-purple-400 animate-spin" />
               )}
             </div>
-            {theme === "stark" && (
-              <span className="text-[10px] font-mono font-bold text-red-400/90 tracking-widest hidden sm:inline-block drop-shadow-[0_0_8px_rgba(255,42,85,0.7)]">
-                J.A.R.V.I.S: TARGET ACQUIRED
-              </span>
-            )}
+
           </div>
 
           {/* Top Right: Tasks Collapsed Pill OR Expanded Card + Stark POWER: 100% */}
@@ -317,11 +305,16 @@ export default function ImmersiveFocusView({
               </div>
             )}
           </div>
-        </div>
+        </header>
 
-        {/* Center: Scalable Countdown Clock & Progress Area (pointer-events-none prevents scaling box from blocking clicks) */}
+      {/* Center Main Stage: The Dashboard Focus & Timer controls that zoom in and out IN PLACE in the center of the screen */}
+      <main className="w-full flex-1 flex flex-col items-center justify-center relative z-10 my-auto pointer-events-none overflow-visible">
         <div
-          className="relative z-10 flex flex-col items-center justify-center my-auto transition-transform duration-200 pointer-events-none w-full"
+          style={{
+            transform: `scale(${zoomPercent / 100})`,
+            transformOrigin: "center center",
+          }}
+          className="relative z-10 flex flex-col items-center justify-center transition-transform duration-200 pointer-events-none w-full"
         >
           {/* Stark Theme Horizontal Laser Reticle Line */}
           {theme === "stark" && (
@@ -518,12 +511,12 @@ export default function ImmersiveFocusView({
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Bottom Area: Docked Music Player Bar + Bottom Dock Toolbar (Seamlessly hidden in Clean Mode without unmounting!) */}
-      <div
+      {/* Bottom Area: Anchored at the bottom of the dashboard in its place */}
+      <footer
         className={cn(
-          "w-full flex flex-col items-center gap-2 pb-2 z-30 transition-all duration-300",
+          "w-full flex flex-col items-center gap-2 pb-2 z-30 transition-all duration-300 shrink-0",
           isCleanMode && "opacity-0 pointer-events-none translate-y-6"
         )}
       >
@@ -669,7 +662,7 @@ export default function ImmersiveFocusView({
             <Minimize2 size={15} />
           </button>
         </div>
-      </div>
+      </footer>
 
       {/* Clean Mode Floating "Show controls" Button (Only visible in Clean Mode) */}
       {isCleanMode && (

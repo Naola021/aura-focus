@@ -100,12 +100,20 @@ export function todayStats(entries: HistoryEntry[], targetHours: number) {
 
 export function atAGlance(entries: HistoryEntry[]) {
   const weekStart = dayStart(-6);
+  const todayStart = dayStart(0);
   const weekEntries = entries.filter((e) => e.endedAt >= weekStart);
+  const todayEntries = entries.filter((e) => e.endedAt >= todayStart);
   const weekMs = weekEntries.reduce((sum, e) => sum + e.durationMs, 0);
   const allTimeMs = entries.reduce((sum, e) => sum + e.durationMs, 0);
 
   const completedSessions = entries.filter((e) => !e.goalMs || e.durationMs >= e.goalMs * 0.9).length;
   const completedPercent = entries.length > 0 ? Math.round((completedSessions / entries.length) * 100) : 100;
+
+  // Attached Tasks Metrics
+  const totalTasksCompleted = entries.reduce((sum, e) => sum + (e.tasksCompleted || (e.tasks ? e.tasks.filter(t => t.done).length : 0)), 0);
+  const totalTasks = entries.reduce((sum, e) => sum + (e.tasksTotal || (e.tasks ? e.tasks.length : 0)), 0);
+  const weekTasksCompleted = weekEntries.reduce((sum, e) => sum + (e.tasksCompleted || (e.tasks ? e.tasks.filter(t => t.done).length : 0)), 0);
+  const todayTasksCompleted = todayEntries.reduce((sum, e) => sum + (e.tasksCompleted || (e.tasks ? e.tasks.filter(t => t.done).length : 0)), 0);
 
   return {
     weekMs,
@@ -113,6 +121,10 @@ export function atAGlance(entries: HistoryEntry[]) {
     allTimeMs,
     allTimeSessions: entries.length,
     completedPercent,
+    totalTasksCompleted,
+    totalTasks,
+    weekTasksCompleted,
+    todayTasksCompleted,
   };
 }
 

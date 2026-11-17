@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { Trash2, X } from "lucide-react";
+import { Trash2, X, Check } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatDuration } from "@/lib/format";
 import { dailyTotals, groupByDay, streak } from "@/lib/stats";
@@ -102,7 +102,15 @@ export default function HistoryDrawer({ open, onClose, entries, onRemove, onClea
                         className="group flex items-center gap-3 rounded-xl border border-zinc-800/70 bg-zinc-900/40 px-3 py-2.5"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm text-zinc-100">{e.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm text-zinc-100">{e.title}</p>
+                            {(e.tasksTotal !== undefined && e.tasksTotal > 0) && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 shrink-0">
+                                <Check size={9} strokeWidth={3} />
+                                <span>{e.tasksCompleted || 0}/{e.tasksTotal} tasks</span>
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-zinc-500">
                             {new Date(e.endedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             {" · "}

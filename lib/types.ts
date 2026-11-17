@@ -53,6 +53,7 @@ export type HistoryEntry = {
   endedAt: number;    // epoch ms
   tasksCompleted?: number;
   tasksTotal?: number;
+  tasks?: SessionTask[];
 };
 
 export const DEFAULT_SUBJECTS: Subject[] = [

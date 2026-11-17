@@ -5,7 +5,9 @@ import {
   Zap,
   RotateCw,
   Play,
-  CalendarCheck
+  CalendarCheck,
+  CheckSquare,
+  Check
 } from "lucide-react";
 import {
   atAGlance,
@@ -47,7 +49,7 @@ export default function StatsView({
             Stats
           </h1>
           <p className="text-xs text-zinc-400">
-            Insights and consistency tracking for your focus blocks.
+            Insights, completed tasks, and consistency tracking for your focus sessions.
           </p>
         </div>
 
@@ -131,12 +133,12 @@ export default function StatsView({
         </div>
       </div>
 
-      {/* AT A GLANCE (4 Metrics Grid - Zero Coins) */}
+      {/* AT A GLANCE (5 Metrics Grid: Including Attached Tasks Done) */}
       <div>
         <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-zinc-400 block mb-3">
           At A Glance
         </span>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {/* Card 1: This Week */}
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4">
             <div className="text-2xl sm:text-3xl font-light text-white tabular-nums">
@@ -155,7 +157,23 @@ export default function StatsView({
             <div className="text-[11px] text-zinc-500">{glance.allTimeSessions} sessions</div>
           </div>
 
-          {/* Card 3: Completed */}
+          {/* Card 3: Attached Tasks Done */}
+          <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-2xl sm:text-3xl font-light text-emerald-400 tabular-nums">
+                {glance.totalTasksCompleted}
+              </span>
+              <CheckSquare size={18} className="text-emerald-400" />
+            </div>
+            <div>
+              <div className="mt-1 text-xs font-semibold text-zinc-300">Tasks done</div>
+              <div className="text-[11px] text-zinc-500">
+                {glance.weekTasksCompleted} completed this week
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Completed Rate */}
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4">
             <div className="text-2xl sm:text-3xl font-light text-white tabular-nums">
               {glance.completedPercent}%
@@ -164,8 +182,8 @@ export default function StatsView({
             <div className="text-[11px] text-zinc-500">hit session targets</div>
           </div>
 
-          {/* Card 4: Daily Goal */}
-          <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4 flex flex-col justify-between">
+          {/* Card 5: Daily Goal */}
+          <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4 flex flex-col justify-between col-span-2 sm:col-span-1">
             <div className="flex items-center justify-between">
               <span className="text-2xl sm:text-3xl font-light text-white tabular-nums">
                 {targetHours}h
@@ -299,50 +317,116 @@ export default function StatsView({
         </div>
       </div>
 
-      {/* RECENT SESSIONS */}
+      {/* RECENT SESSIONS & ATTACHED TASKS */}
       <div className="rounded-3xl border border-zinc-800/80 bg-zinc-900/50 p-6 space-y-4">
-        <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-zinc-400 block">
-          Recent Sessions
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-zinc-400 block">
+            Recent Sessions & Attached Tasks
+          </span>
+          <span className="text-xs text-zinc-500 font-mono">
+            {glance.totalTasksCompleted} total tasks done
+          </span>
+        </div>
 
         {history.length === 0 ? (
           <div className="py-8 text-center text-xs text-zinc-500">
-            No recent sessions. Start a focus session to log your work!
+            No recent sessions. Start a focus session with attached tasks to log your progress!
           </div>
         ) : (
           <div className="divide-y divide-zinc-800/60">
-            {history.slice(0, 8).map((session) => (
-              <div
-                key={session.id}
-                className="flex items-center justify-between py-3 hover:bg-zinc-800/20 px-2 rounded-xl transition"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: session.subjectColor || "#ff4d6d" }}
-                  />
-                  <div>
-                    <div className="text-sm font-semibold text-zinc-200">
-                      {session.subjectName || session.title || "Focus session"}
+            {history.slice(0, 10).map((session) => {
+              const tasksCompleted =
+                session.tasksCompleted ??
+                (session.tasks ? session.tasks.filter((t) => t.done).length : 0);
+              const tasksTotal =
+                session.tasksTotal ?? (session.tasks ? session.tasks.length : 0);
+              const hasTasks = tasksTotal > 0 || (session.tasks && session.tasks.length > 0);
+
+              return (
+                <div
+                  key={session.id}
+                  className="py-3.5 hover:bg-zinc-800/20 px-2 rounded-2xl transition space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: session.subjectColor || "#ff4d6d" }}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-zinc-200 truncate">
+                            {session.subjectName || session.title || "Focus session"}
+                          </span>
+                          {hasTasks && (
+                            <span
+                              className={cn(
+                                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border",
+                                tasksCompleted === tasksTotal && tasksTotal > 0
+                                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                                  : "bg-amber-500/15 border-amber-500/30 text-amber-300"
+                              )}
+                            >
+                              <Check size={10} strokeWidth={3} />
+                              <span>
+                                {tasksCompleted}/{tasksTotal} task{tasksTotal === 1 ? "" : "s"} done
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-zinc-500">
+                          {new Date(session.endedAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          {" · "}
+                          <span className="capitalize">{session.mode}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-zinc-500">
-                      {new Date(session.endedAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-xs font-mono text-zinc-300">
+                        {formatDurationCompact(session.durationMs)}
+                      </span>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4 text-xs font-mono">
-                  <span className="text-zinc-300">
-                    {formatDurationCompact(session.durationMs)}
-                  </span>
+                  {/* Attached Tasks List preview if available */}
+                  {session.tasks && session.tasks.length > 0 && (
+                    <div className="ml-5 flex flex-wrap gap-1.5 pt-1">
+                      {session.tasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs border transition",
+                            task.done
+                              ? "bg-emerald-950/30 border-emerald-500/30 text-emerald-300"
+                              : "bg-zinc-900/60 border-zinc-800 text-zinc-400"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "h-3.5 w-3.5 rounded flex items-center justify-center text-[9px] font-bold shrink-0",
+                              task.done
+                                ? "bg-emerald-500 text-zinc-950"
+                                : "border border-zinc-700 bg-zinc-800"
+                            )}
+                          >
+                            {task.done ? "✓" : ""}
+                          </span>
+                          <span className={cn(task.done && "line-through opacity-85")}>
+                            {task.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
