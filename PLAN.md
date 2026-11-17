@@ -226,11 +226,37 @@
       - 50% zoom: [aura-stark-live-zoom50.png](file:///C:/Users/G-Trader/.gemini/antigravity/brain/57f3ff44-59a5-4014-b507-4831902ed378/aura-stark-live-zoom50.png)
     - Pushed commit `d9e2604` to `origin main` for automated Vercel live production deployment.
 
+### Milestone 22: Popout / Picture-in-Picture Theme Inheritance Engine
+  - **Why the Popout Theme Was Different**:
+    - **Missing Theme Prop in FocusPage**: `FocusPage.tsx` manages `focusTheme` (e.g. `"stark"`), but `<MiniTimerOnTop>` was never passed the `theme` prop.
+    - **Hardcoded Mountain Fallback in MiniTimerOnTop**: `MiniTimerOnTop.tsx` lacked the `theme` prop, hardcoding `wallpaperImage` with an Unsplash starry mountain fallback (`bgUrl = wallpaperImage || "...unsplash..."`), hardcoding `text-white font-sans` for digits, and hardcoding a white progress bar.
+    - **Outer Margin in Document PiP**: `usePictureInPicture.ts` set `p-3` (12px padding) on the body, introducing an outer black gap around the popout window instead of edge-to-edge full bleed.
+    - **CSS Class Concatenation Conflict**: `lib/cn.ts` performs raw class string concatenation, which resulted in `w-full` overriding `w-72` during in-page floating.
+  - **Implementation**:
+    - Enhanced [`components/focus/MiniTimerOnTop.tsx`](file:///c:/Users/G-Trader/Documents/Project-X/Aura/nuzz-focus/components/focus/MiniTimerOnTop.tsx):
+      - Added `theme?: FocusTheme;` to `Props`.
+      - Resolved `themeConfig = THEMES.find((t) => t.id === theme) || THEMES[0]`.
+      - **Background**: For Tony Stark theme, renders the high-definition Mark VII helmet HUD cockpit background (`url('/themes/tony-stark-hud.jpg')`, `cover`, `center 45%`). For other themes, renders the theme's rich atmospheric gradient (`previewBg` or `bgClass`).
+      - **Typography**: Applies `themeConfig.fontClass` and `themeConfig.timerColor` (for Stark: `font-mono font-black tracking-widest text-[#ff2e56]` with crimson glow). Prepend currency symbol for `money` (`$`) and trading ticker (`+`).
+      - **Progress Bar**: Glows with `themeConfig.accentColor` (`#ff2e56` for Stark, `#10b981` for Wall Street, `#f59e0b` for Batman).
+      - **HUD Telemetry Pill**: Displays `🔴 J.A.R.V.I.S // ${subjectName}` with pulsing beacon and `MARK VII // HUD MINI` label for Stark theme.
+      - **Layout Disentanglement**: Separated `inPageFloating` (`fixed bottom-5 right-5 z-50 w-72 h-40 rounded-3xl`) from Document PiP (`relative h-screen w-screen`).
+    - Updated [`components/focus/FocusPage.tsx`](file:///c:/Users/G-Trader/Documents/Project-X/Aura/nuzz-focus/components/focus/FocusPage.tsx):
+      - Passed `theme={focusTheme}` into `<MiniTimerOnTop ... />`.
+    - Updated [`hooks/usePictureInPicture.ts`](file:///c:/Users/G-Trader/Documents/Project-X/Aura/nuzz-focus/hooks/usePictureInPicture.ts):
+      - Changed `p-3` to `p-0` for full bleed rendering in native Picture-in-Picture windows.
+  - **Verification**:
+    - `npx tsc --noEmit`: 0 errors.
+    - `npm run lint`: 0 errors.
+    - `npm run build`: Turbopack production build succeeded with 0 errors.
+    - Verified live rendering with Chrome headless CDP screenshot: [`aura-popout-stark-live.png`](file:///C:/Users/G-Trader/.gemini/antigravity/brain/57f3ff44-59a5-4014-b507-4831902ed378/aura-popout-stark-live.png).
+
 ## Current Trajectory
-- Complete: Tony Stark theme timer duplication resolved, background image inpainted clean, and zoom layout anchored.
+- Complete: Popout and Picture-in-Picture windows now dynamically inherit the active theme, cockpit HUD background, crimson monospace digits, glowing progress bar, and J.A.R.V.I.S HUD telemetry pill.
 
 ## Squad Status
 | Agent | Task | Status |
 | --- | --- | --- |
 | Senior Product Engineer | Attached Tasks Tracking in Focus Stats & Analytics | Completed |
 | Senior Product Engineer | Tony Stark HUD 00:30:00 Timer Removal & Zoom Anchor Stabilization | Completed |
+| Senior Product Engineer | Popout / Picture-in-Picture Dynamic Theme Inheritance | Completed |

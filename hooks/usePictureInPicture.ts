@@ -43,7 +43,7 @@ export function usePictureInPicture() {
 
         // Set base styles for the floating PiP window
         pip.document.documentElement.className = "dark";
-        pip.document.body.className = "bg-zinc-950 text-zinc-100 antialiased m-0 p-3 overflow-hidden select-none flex flex-col justify-between h-screen box-border";
+        pip.document.body.className = "bg-black text-zinc-100 antialiased m-0 p-0 overflow-hidden select-none flex flex-col justify-between h-screen box-border";
         pip.document.title = "Aura · On Top";
 
         const onPageHide = () => setPipWindow(null);

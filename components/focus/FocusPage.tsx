@@ -561,6 +561,7 @@ export default function FocusPage() {
         subjectName={currentSubject.name}
         subjectColor={currentSubject.color}
         wallpaperImage={wallpaper.image}
+        theme={focusTheme}
         onStart={handleStart}
         onPause={timer.pause}
         onFinish={handleFinish}
